@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { Animator, Dog, Player } from './actors.js';
+import { Animator, Dog, Player, headingOf, turnToward } from './actors.js';
 import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js';
 import { ICE_PATCHES, onIce } from './ice.js';
 import { buildIce } from './iceMaterial.js';
@@ -291,15 +291,61 @@ const targetMarkers = deliveryTargets.map(({ obj, box }, index) => {
   const light = new THREE.PointLight('#ffd36a', 32, 20, 2);
   light.position.set(obj.position.x, Math.min(box.max.y * 0.6, 5), obj.position.z + (obj.position.z < 0 ? 3 : -3));
   scene.add(light);
-  return { star, texture, light };
+  return { star, texture, light, groundGlow };
 
 });
 minimap.setDeliveryTargets(deliveryTargets.map(({ obj }, index) => ({
   position: obj.position, texture: targetMarkers[index].texture,
 })));
+const deliveredHomes = new Set();
+let pendingDelivery = null;
+let deliveryNoticeTime = 0;
+const deliveryNotice = document.getElementById('delivery-notice');
+function distanceToHome({ box }) {
+  const x = Math.max(box.min.x - player.pos.x, 0, player.pos.x - box.max.x);
+  const z = Math.max(box.min.z - player.pos.z, 0, player.pos.z - box.max.z);
+  return Math.hypot(x, z);
+}
+function deliverTo(target) {
+  if (!target || pendingDelivery || deliveredHomes.has(target) || !player.carry || player.balance.locked || distanceToHome(target) > 2) return false;
+  const gift = player.gifts.removeTop(scene);
+  const start = gift.position.clone();
+  const north = target.obj.position.z < 0;
+  const finish = new THREE.Vector3(
+    THREE.MathUtils.clamp(player.pos.x, target.box.min.x + 0.5, target.box.max.x - 0.5),
+    gift.userData.halfHeight,
+    north ? target.box.max.z + 0.35 : target.box.min.z - 0.35,
+  );
+  const handoff = start.clone().addScaledVector(
+    finish.clone().sub(player.pos).setY(0).normalize(), 0.35);
+  handoff.y += 0.12;
+  player.body.vel.x = player.body.vel.z = 0;
+  const arm = player.tilt.getObjectByName('arm-right');
+  pendingDelivery = { target, gift, start, handoff, finish, arm, armStartX: arm.rotation.x, time: 0 };
+  walkTarget = null;
+  return true;
+}
+function finishDelivery({ target, gift }) {
+  scene.remove(gift);
+  walkTarget = null;
+  deliveredHomes.add(target);
+  const index = deliveryTargets.indexOf(target);
+  targetMarkers[index].star.visible = false;
+  targetMarkers[index].light.visible = false;
+  targetMarkers[index].groundGlow.visible = false;
+  minimap.setDeliveryTargets(deliveryTargets.flatMap(({ obj }, i) =>
+    deliveredHomes.has(deliveryTargets[i]) ? [] : [{ position: obj.position, texture: targetMarkers[i].texture }]));
+  deliveryNoticeTime = 3.0;
+  deliveryNotice.hidden = false;
+}
+function nearbyHome() {
+  return deliveryTargets.filter(target => !deliveredHomes.has(target))
+    .sort((a, b) => distanceToHome(a) - distanceToHome(b))[0];
+}
 
 // pick the nearest object under the mouse; if it is the ground, walk there
 function click(mx, my) {
+  if (pendingDelivery) return;
   if (minimap.contains(mx, my)) {             // a click on the minimap: walk there
     walkTarget = minimap.toWorld(mx, my);
     stuck = 0;
@@ -325,6 +371,13 @@ function click(mx, my) {
       takeGift(best);
     } else {
       walkTarget = best.position.clone().setY(0);
+      stuck = 0;
+    }
+  } else if (best && deliveryTargets.some(target => target.obj === best)) {
+    const target = deliveryTargets.find(home => home.obj === best);
+    if (!deliverTo(target) && !deliveredHomes.has(target)) {
+      walkTarget = new THREE.Vector3(target.obj.position.x, 0,
+        target.box[target.obj.position.z < 0 ? 'max' : 'min'].z + (target.obj.position.z < 0 ? 1 : -1));
       stuck = 0;
     }
   } else {
@@ -389,6 +442,7 @@ addEventListener('keydown', (e) => {
     if (!e.repeat && !player.balance.locked) {
       const gift = nearbyGift();
       if (gift) takeGift(gift);
+      else deliverTo(nearbyHome());
     }
   }
   if (debugIceShortcut && /^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
@@ -477,7 +531,34 @@ function step(dt) {
   if (demo) demoStep(simT, dt);
   const sprint = keys.has('ShiftLeft') || keys.has('ShiftRight');
   const before = player.pos.clone();
-  player.update(dt, moveInput(), sprint);
+  player.update(dt, pendingDelivery ? new THREE.Vector3() : moveInput(), pendingDelivery ? false : sprint);
+  if (pendingDelivery) {
+    const delivery = pendingDelivery;
+    delivery.time += dt;
+    const progress = Math.min(1, Math.max(0, (delivery.time - 1) / 0.9));
+    const ease = progress * progress * (3 - 2 * progress);
+    const towardDoor = delivery.finish.clone().sub(player.pos);
+    player.obj.rotation.y = turnToward(player.obj.rotation.y, headingOf(towardDoor), Player.TURN, dt);
+    const reach = Math.min(1, delivery.time / 0.25);
+    const release = Math.min(1, Math.max(0, (2.1 - delivery.time) / 0.2));
+    const motion = reach * release;
+    delivery.arm.rotation.x = delivery.armStartX - 0.55 * motion;
+    if (delivery.time < 1) {
+      const extend = Math.min(1, delivery.time / 0.25);
+      delivery.gift.position.lerpVectors(delivery.start, delivery.handoff, extend);
+    } else {
+      delivery.gift.position.lerpVectors(delivery.handoff, delivery.finish, ease);
+      delivery.gift.position.y += 0.12 * Math.sin(Math.PI * progress);
+    }
+    if (delivery.time >= 2.1) {
+      finishDelivery(delivery);
+      pendingDelivery = null;
+    }
+  }
+  if (deliveryNoticeTime > 0) {
+    deliveryNoticeTime -= dt;
+    if (deliveryNoticeTime <= 0) deliveryNotice.hidden = true;
+  }
   if (walkTarget) {                                     // blocked by a wall for a while: give up
     const moved = Math.hypot(player.pos.x - before.x, player.pos.z - before.z);
     stuck = moved < 0.3 * Player.WALK * dt ? stuck + dt : 0;
@@ -506,7 +587,7 @@ const hudBal = document.getElementById('balance');
 function updateHud() {
   hudDog.textContent = dog.state;
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
-    + ` · 들고 있는 선물 ${player.carry}/5 · 트리 아래 ${groundGifts.size} · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
+    + ` · 들고 있는 선물 ${player.carry}/5 · 트리 아래 ${groundGifts.size} · 배달 ${deliveredHomes.size}/5 · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
 const clock = new THREE.Clock();
