@@ -159,6 +159,7 @@ const giftSpots = [
   [[4.3, 6.5], [5.2, 6.7], [6.1, 6.5]],
   [[-6.2, 6], [-5.3, 6.2], [-4.4, 6]],
 ];
+const lastTree = new Map();
 const groundGifts = new Map();
 const pickupRadius = 1.8;
 function spawnGift(id) {
@@ -167,12 +168,13 @@ function spawnGift(id) {
   const occupied = new Set(Array.from(groundGifts.values(), entry => entry.spot));
   const candidates = giftSpots.map((spots, tree) => ({
     tree, free: spots.filter(spot => !occupied.has(spot)),
-  })).filter(group => group.free.length);
+  })).filter(group => group.tree !== lastTree.get(id) && group.free.length);
   // Prefer the least occupied trees, then break ties randomly.
   const mostFree = Math.max(...candidates.map(group => group.free.length));
   const tied = candidates.filter(group => group.free.length === mostFree);
   const group = tied[Math.floor(Math.random() * tied.length)];
   const spot = group.free[Math.floor(Math.random() * group.free.length)];
+  lastTree.set(id, group.tree);
   gift.position.set(spot[0], gift.userData.halfHeight, spot[1]);
   scene.add(gift);
   groundGifts.set(id, { obj: gift, spot, box: new THREE.Box3().setFromObject(gift) });
@@ -191,7 +193,10 @@ function nearbyGift() {
   }
   return nearest;
 }
-player.onGiftBreak.push((pl, q) => sound.play('gift_break', q));
+player.onGiftBreak.push((pl, q, id) => {
+  sound.play('gift_break', q);
+  spawnGift(id);
+});
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => sound.resume());
 
 // collider outlines for the B key
