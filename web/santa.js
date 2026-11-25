@@ -99,6 +99,7 @@ export class SantaPlayer extends Player {
     this.scene = scene;
     this.body = new SlideBody();
     this.balance = new Balance();
+    this.spinDirection = 1;
     this.gifts = new GiftStack(tilt);
     this.falling = [];
     this.onIce = false;
@@ -126,6 +127,10 @@ export class SantaPlayer extends Player {
       onIce: this.onIce, sprint, speed: this.body.speed, turnCos: this.body.turnCos(desired), carry: this.carry,
     });
     for (const e of b.events) {
+      if (e === 'wobble') {
+        const velocity = this.body.vel;
+        this.spinDirection = Math.sign(velocity.z * desired.x - velocity.x * desired.z) || 1;
+      }
       if (e === 'fall' || e === 'drop') this.dropTop();
       for (const f of this.onBalance) f(this, e);
     }
@@ -150,7 +155,10 @@ export class SantaPlayer extends Player {
 
     // 3. facing: turn toward the input (the body may still slide the other way on ice)
     const hasInput = move.lengthSq() > 1e-12;
-    if (hasInput && !locked) {
+    if (this.balance.state === 'FALLEN' && this.onIce) {
+      const fade = Math.max(0, 1 - this.balance.timer / Balance.FALL_TIME);
+      this.obj.rotation.y += this.spinDirection * this.body.speed * fade * dt;
+    } else if (hasInput && !locked) {
       this.obj.rotation.y = turnToward(this.obj.rotation.y, headingOf(move), Player.TURN, dt);
       this.lookAt = null;
     }

@@ -15,17 +15,20 @@
 //   carrying 3 gifts: constant small sway, and WOBBLE starts more easily
 //   carrying 4 or more: big sway, and every OVERLOAD_TIME the top gift falls off ('drop' event)
 
-export const GRIP = { snow: 14.0, snowStop: 10.0, ice: 1.6, iceStop: 0.6, fallen: 2.0 };   // 1/s
+export const GRIP = { snow: 14.0, snowStop: 10.0, ice: 0.9, iceStop: 0.23, fallen: 2.0 };   // 1/s
 
 export class SlideBody {
+  static ICE_SPEED_FACTOR = 1.2;
+
   constructor() { this.vel = { x: 0, z: 0 }; }
   get speed() { return Math.hypot(this.vel.x, this.vel.z); }
 
   // desired: unit {x, z} or {0, 0}; returns the displacement for this frame
   update(dt, desired, maxSpeed, onIce, locked = false) {
     const hasInput = !locked && (desired.x !== 0 || desired.z !== 0);
-    const tx = hasInput ? desired.x * maxSpeed : 0;
-    const tz = hasInput ? desired.z * maxSpeed : 0;
+    const targetSpeed = onIce ? maxSpeed * SlideBody.ICE_SPEED_FACTOR : maxSpeed;
+    const tx = hasInput ? desired.x * targetSpeed : 0;
+    const tz = hasInput ? desired.z * targetSpeed : 0;
     let k;
     if (locked) k = onIce ? GRIP.iceStop : GRIP.fallen;
     else if (onIce) k = hasInput ? GRIP.ice : GRIP.iceStop;
@@ -50,7 +53,7 @@ export class Balance {
   // [minimum speed m/s, turn cosine limit] that starts a wobble, by how many gifts are carried
   static TRIGGER = { light: [3.5, 0.5], heavy: [2.5, Math.SQRT1_2] };   // 60° turn, 45° turn
   static WINDOW = { light: 0.8, heavy: 0.6 };   // s to release Shift
-  static FALL_TIME = 1.0;
+  static FALL_TIME = 4.0;
   static GETUP_TIME = 0.5;
   static OVERLOAD_TIME = 1.5;                   // s between drops when carrying 4 or more
   static SWAY = { 0: 0, 3: 0.07, 4: 0.14 };     // rad, idle sway amplitude by load
