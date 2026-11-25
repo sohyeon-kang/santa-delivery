@@ -245,6 +245,9 @@ function setCarry(n) {
   while (player.carry > n) scene.remove(player.gifts.removeTop(scene));
 }
 let iceIndex = 0;
+const debugIceShortcut = new URLSearchParams(location.search).get('debug') === '1';
+document.getElementById('ice-shortcut').hidden = !debugIceShortcut;
+
 function teleportToIce() {
   const pt = ICE_PATCHES[iceIndex++ % ICE_PATCHES.length];
   player.pos.set(pt.c[0] - pt.h[0] - 4, 0, pt.c[1]);      // 4 m west of the patch, facing it
@@ -264,7 +267,7 @@ addEventListener('keydown', (e) => {
   // ---- spike test keys (remove or hide before submission)
   if (/^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
   if (e.code === 'KeyI' && !e.repeat) document.getElementById('icemode').textContent = ice.cycle();   // ice shader terms
-  if (e.code === 'KeyT' && !e.repeat) teleportToIce();                                // jump next to an ice patch
+  if (debugIceShortcut && e.code === 'KeyT' && !e.repeat) teleportToIce();                                // jump next to an ice patch
   if (e.code === 'F12') {
     e.preventDefault();
     const a = document.createElement('a');

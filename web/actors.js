@@ -51,7 +51,7 @@ export class Animator {
 }
 
 export class Player {
-  static WALK = 2.2; static SPRINT = 5.0; static TURN = 10.0;
+  static WALK = 3.0; static SPRINT = 5.6; static TURN = 10.0;
   static RADIUS = 0.35;                 // m, for collision
   static THROW_SPEED = [5.5, 3.5];      // m/s forward, up
 
