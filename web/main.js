@@ -6,6 +6,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { Animator, Dog, Player } from './actors.js';
+import { SantaPlayer } from './santa.js';
+import { ICE_PATCHES, onIce } from './ice.js';
+import { buildIce } from './iceMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
 import { Minimap, RANGE, SIZE } from './minimap.js';
 import { Sound } from './sound.js';
@@ -41,7 +44,7 @@ const hdr = await new RGBELoader().loadAsync('../assets/hdri/kloofendal_48d_part
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromEquirectangular(hdr).texture;
 scene.environmentIntensity = 0.6;
-hdr.dispose();
+// keep the equirectangular HDR: the ice shader reads it as its environment map
 
 // sun with a shadow camera that follows the player
 const sunDir = new THREE.Vector3(...data.sun.direction).normalize();
@@ -92,8 +95,17 @@ const props = await Promise.all(data.props.map(place));
 for (const p of props) { p.obj.updateMatrixWorld(true); p.box = new THREE.Box3().setFromObject(p.obj); }
 const colliders = props.map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
 
+// player = rig (position, heading) > tilt (lean around the feet) > model   (see santa.js)
 const p = await place(data.player);
-const player = new Player(p.obj, new Animator(p.obj, p.clips), colliders);
+const rig = new THREE.Group(), tilt = new THREE.Group();
+rig.position.copy(p.obj.position);
+rig.rotation.y = p.obj.rotation.y;
+p.obj.position.set(0, 0, 0);
+p.obj.rotation.set(0, 0, 0);
+tilt.add(p.obj);
+rig.add(tilt);
+scene.add(rig);
+const player = new SantaPlayer(rig, tilt, new Animator(p.obj, p.clips), colliders, scene);
 const d = await place(data.dog);
 const dog = new Dog(d.obj, new Animator(d.obj, d.clips), data.dog.home ?? data.dog.pos,
   data.dog.wanderRadius ?? 4, colliders);
@@ -113,12 +125,27 @@ const sound = new Sound(scene);
 sound.load().catch((e) => console.warn('sound off:', e));   // load in the background; the game starts silent
 // hard ground (roads, pavements, plazas) for footstep sounds: footprints of road and tile pieces
 const hardGround = props.filter((p) => p.obj.name.includes('road') || p.obj.name.includes('tile')).map((p) => p.box);
-const surface = (q) => (hardGround.some((b) => q.x >= b.min.x && q.x <= b.max.x && q.z >= b.min.z && q.z <= b.max.z) ? 'hard' : 'grass');
+const surface = (q) => (onIce(q.x, q.z) ? 'ice'
+  : hardGround.some((b) => q.x >= b.min.x && q.x <= b.max.x && q.z >= b.min.z && q.z <= b.max.z) ? 'hard' : 'grass');
+
 const up = (q, h) => q.clone().add(new THREE.Vector3(0, h, 0));
 player.onStep.push((pl) => sound.play('step_' + surface(pl.pos), pl.pos.clone()));
 player.onThrow.push((pl) => sound.play('throw', up(pl.pos, 1.2)));
 ball.onHit.push((b, kind, v) => sound.play(kind === 'ground' ? 'bounce' : 'wall', b.pos.clone(), Math.min(1, v / 5)));
 dog.onBark.push((dg) => sound.play('bark', up(dg.pos, 0.5)));
+
+// ice patches with the hand-written shader (iceMaterial.js)
+const ice = buildIce(scene, ICE_PATCHES, hardGround, {
+  envMap: hdr, sunDir, sunColor: sun.color, sunIntensity: sun.intensity, fog: scene.fog,
+});
+
+// balance events: sound + (on screen) the "!" above the head, so no message is sound-only
+player.onBalance.push((pl, e) => {
+  if (e === 'wobble') sound.play('wobble', up(pl.pos, 1.6));
+  if (e === 'recover') sound.play('recover', up(pl.pos, 1.6));
+  if (e === 'fall') sound.play('fall', pl.pos.clone());
+});
+player.onGiftBreak.push((pl, q) => sound.play('gift_break', q));
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => sound.resume());
 
 // collider outlines for the B key
@@ -212,6 +239,20 @@ function updateCamera(dt) {
   sun.position.copy(player.pos).addScaledVector(sunDir, -60);
 }
 
+// ------------------------------------------------------------ spike test helpers
+function setCarry(n) {
+  while (player.carry < n) player.gifts.add();
+  while (player.carry > n) scene.remove(player.gifts.removeTop(scene));
+}
+let iceIndex = 0;
+function teleportToIce() {
+  const pt = ICE_PATCHES[iceIndex++ % ICE_PATCHES.length];
+  player.pos.set(pt.c[0] - pt.h[0] - 4, 0, pt.c[1]);      // 4 m west of the patch, facing it
+  player.obj.rotation.y = Math.PI / 2;
+  player.body.vel.x = player.body.vel.z = 0;
+  walkTarget = null;
+}
+
 // ------------------------------------------------------------ input
 const keys = new Set();
 addEventListener('keydown', (e) => {
@@ -220,6 +261,10 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyF' && !e.repeat) player.throw(ball, camForward());
   if (e.code === 'KeyE' && !e.repeat) player.wave();
   if (e.code === 'KeyM' && !e.repeat) sound.toggleMute();
+  // ---- spike test keys (remove or hide before submission)
+  if (/^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
+  if (e.code === 'KeyI' && !e.repeat) document.getElementById('icemode').textContent = ice.cycle();   // ice shader terms
+  if (e.code === 'KeyT' && !e.repeat) teleportToIce();                                // jump next to an ice patch
   if (e.code === 'F12') {
     e.preventDefault();
     const a = document.createElement('a');
@@ -325,6 +370,12 @@ function renderFrame() {
 }
 
 const hudDog = document.getElementById('dogstate');
+const hudBal = document.getElementById('balance');
+function updateHud() {
+  hudDog.textContent = dog.state;
+  hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
+    + ` · gifts ${player.carry} · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
+}
 const hudFps = document.getElementById('fps');
 const clock = new THREE.Clock();
 let frames = 0, fpsTime = 0;
@@ -335,7 +386,7 @@ if (params.get('t')) {
   const n = Math.round(Number(params.get('t')) * 60);
   for (let i = 0; i < n; i++) step(1 / 60);
   renderer.setAnimationLoop(renderFrame);
-  hudDog.textContent = dog.state;
+  updateHud();
   if (sound.log) document.body.dataset.sounds = JSON.stringify(sound.log.map(([t, r]) => [Math.round(t * 100) / 100, r]));
   document.title = 'READY';
 } else {
@@ -343,7 +394,7 @@ if (params.get('t')) {
     const dt = Math.min(clock.getDelta(), 0.05);
     step(dt);
     renderFrame();
-    hudDog.textContent = dog.state;
+    updateHud();
     frames++; fpsTime += dt;
     if (fpsTime > 0.5) { hudFps.textContent = `${Math.round(frames / fpsTime)} fps`; frames = 0; fpsTime = 0; }
   });
