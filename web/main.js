@@ -10,7 +10,7 @@ import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } fro
 import { ICE_PATCHES, onIce } from './ice.js';
 import { buildIce } from './iceMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
-import { Minimap, RANGE, SIZE } from './minimap.js';
+import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js';
 import { Sound } from './sound.js';
 
 const MODELS = '../assets/models/';
@@ -244,6 +244,60 @@ function select(obj) {
 
 const minimap = new Minimap(scene);
 
+// Choose five distinct suburban houses for this run.
+const houses = props.filter(({ obj }) => obj.name.startsWith('building-type-'));
+for (let i = houses.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [houses[i], houses[j]] = [houses[j], houses[i]];
+}
+const deliveryTargets = houses.slice(0, 5);
+const targetColors = ['#ffe46d', '#ff9b88', '#82e8ff', '#ff9ce0', '#c5a4ff'];
+const glowGroundMaterial = new THREE.ShaderMaterial({
+  uniforms: { uGlow: { value: 0.8 } },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform float uGlow;
+    varying vec2 vUv;
+    void main() {
+      float radius = length(vUv - 0.5) * 2.0;
+      float fade = 1.0 - smoothstep(0.15, 1.0, radius);
+      gl_FragColor = vec4(1.0, 0.75, 0.18, fade * 0.24 * uGlow);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  side: THREE.DoubleSide,
+});
+const targetMarkers = deliveryTargets.map(({ obj, box }, index) => {
+  const texture = deliveryStarTexture(targetColors[index]);
+  const worldTexture = deliveryStarTexture('#ffe25d', false);
+  const star = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: worldTexture, depthTest: false, depthWrite: false, transparent: true,
+  }));
+  star.position.set(obj.position.x, box.max.y + 1.5, obj.position.z);
+  star.scale.set(3.2, 3.2, 1);
+  scene.add(star);
+  const groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), glowGroundMaterial);
+  groundGlow.rotation.x = -Math.PI / 2;
+  groundGlow.position.set(obj.position.x, 0.09, obj.position.z);
+  scene.add(groundGlow);
+  const light = new THREE.PointLight('#ffd36a', 32, 20, 2);
+  light.position.set(obj.position.x, Math.min(box.max.y * 0.6, 5), obj.position.z + (obj.position.z < 0 ? 3 : -3));
+  scene.add(light);
+  return { star, texture, light };
+
+});
+minimap.setDeliveryTargets(deliveryTargets.map(({ obj }, index) => ({
+  position: obj.position, texture: targetMarkers[index].texture,
+})));
+
 // pick the nearest object under the mouse; if it is the ground, walk there
 function click(mx, my) {
   if (minimap.contains(mx, my)) {             // a click on the minimap: walk there
@@ -395,7 +449,7 @@ function demoStep(t, dt) {
     }
     if (e.mapclick) {                                   // click the minimap where that ground point is drawn
       const r = minimap.rect(), [x, z] = e.mapclick;
-      click(r.left + (x - player.pos.x + RANGE) / (2 * RANGE) * SIZE, r.top + (z - player.pos.z + RANGE) / (2 * RANGE) * SIZE);
+      click(r.left + (x + RANGE) / (2 * RANGE) * SIZE, r.top + (z + RANGE) / (2 * RANGE) * SIZE);
     }
     if (e.cam) {
       camGoal = [THREE.MathUtils.degToRad(e.cam[0]), e.cam[1], e.cam[2]];
@@ -433,6 +487,9 @@ function step(dt) {
   ball.update(dt, colliders);
   marker.visible = walkTarget !== null;
   if (walkTarget) marker.position.copy(walkTarget).setY(0.02);
+  const targetGlow = 0.75 + 0.25 * Math.sin(simT * 3);
+  glowGroundMaterial.uniforms.uGlow.value = targetGlow;
+  for (const { light } of targetMarkers) light.intensity = 32 * targetGlow;
   updateCamera(dt);
   // third-person games put the ears on the character and turn them with the camera
   sound.setListener(up(player.pos, 1.4), camera.quaternion);
