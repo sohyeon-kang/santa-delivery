@@ -1,0 +1,5 @@
+﻿python/.venv/
+__pycache__/
+*.mp4
+Thumbs.db
+.DS_Store
