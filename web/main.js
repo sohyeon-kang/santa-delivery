@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { Animator, Dog, Player } from './actors.js';
-import { SantaPlayer, withCarryClips } from './santa.js';
+import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js';
 import { ICE_PATCHES, onIce } from './ice.js';
 import { buildIce } from './iceMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
@@ -90,6 +90,11 @@ async function place(desc) {
   return { obj, clips: gltf.animations };
 }
 
+const giftFiles = ['present-a-cube', 'present-b-cube', 'present-a-rectangle',
+  'present-b-rectangle', 'present-a-round'];
+setGiftModels(await Promise.all(giftFiles.map(async name =>
+  (await loadGLB('holiday-kit/' + name + '.glb')).scene)));
+
 const props = await Promise.all(data.props.map(place));
 // world-space AABBs (rest pose): picking, and ground-plane colliders (see physics.js)
 for (const p of props) { p.obj.updateMatrixWorld(true); p.box = new THREE.Box3().setFromObject(p.obj); }
@@ -97,6 +102,7 @@ const colliders = props.map((p) => makeCollider(p.obj.name, p.box, p.obj.positio
 
 // player = rig (position, heading) > tilt (lean around the feet) > model   (see santa.js)
 const p = await place(data.player);
+p.obj.scale.multiplyScalar(SANTA_SCALE);
 const rig = new THREE.Group(), tilt = new THREE.Group();
 rig.position.copy(p.obj.position);
 rig.rotation.y = p.obj.rotation.y;
@@ -145,7 +151,52 @@ player.onBalance.push((pl, e) => {
   if (e === 'recover') sound.play('recover', up(pl.pos, 1.6));
   if (e === 'fall') sound.play('fall', pl.pos.clone());
 });
-player.onGiftBreak.push((pl, q) => sound.play('gift_break', q));
+// Clear pickup spots beside the five park trees (world x/z).
+const giftSpots = [
+  [[-0.95, 3.3], [0, 3.5], [0.95, 3.3]],
+  [[-6.2, 0.8], [-5.3, 1], [-4.4, 0.8]],
+  [[4.5, 0.6], [5.4, 0.8], [6.3, 0.6]],
+  [[4.3, 6.5], [5.2, 6.7], [6.1, 6.5]],
+  [[-6.2, 6], [-5.3, 6.2], [-4.4, 6]],
+];
+const lastTree = new Map();
+const groundGifts = new Map();
+const pickupRadius = 1.8;
+function spawnGift(id) {
+  const gift = makeGift(id);
+  gift.userData.giftId = id;
+  const occupied = new Set(Array.from(groundGifts.values(), entry => entry.spot));
+  const candidates = giftSpots.map((spots, tree) => ({
+    tree, free: spots.filter(spot => !occupied.has(spot)),
+  })).filter(group => group.tree !== lastTree.get(id) && group.free.length);
+  // Prefer the least occupied trees, then break ties randomly.
+  const mostFree = Math.max(...candidates.map(group => group.free.length));
+  const tied = candidates.filter(group => group.free.length === mostFree);
+  const group = tied[Math.floor(Math.random() * tied.length)];
+  const spot = group.free[Math.floor(Math.random() * group.free.length)];
+  lastTree.set(id, group.tree);
+  gift.position.set(spot[0], gift.userData.halfHeight, spot[1]);
+  scene.add(gift);
+  groundGifts.set(id, { obj: gift, spot, box: new THREE.Box3().setFromObject(gift) });
+}
+for (let id = 0; id < 5; id++) spawnGift(id);
+
+function takeGift(gift) {
+  groundGifts.delete(gift.userData.giftId);
+  player.gifts.add(gift);
+}
+function nearbyGift() {
+  let nearest = null, distance = pickupRadius;
+  for (const { obj } of groundGifts.values()) {
+    const d = Math.hypot(obj.position.x - player.pos.x, obj.position.z - player.pos.z);
+    if (d <= distance) { nearest = obj; distance = d; }
+  }
+  return nearest;
+}
+player.onGiftBreak.push((pl, q, id) => {
+  sound.play('gift_break', q);
+  spawnGift(id);
+});
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => sound.resume());
 
 // collider outlines for the B key
@@ -170,6 +221,8 @@ marker.visible = false;
 scene.add(marker);
 
 function setHighlight(obj, on) {
+  // Keep the Christmas tree's original palette when clicked.
+  if (obj.name.startsWith('tree')) return;
   obj.traverse((o) => {
     if (!o.isMesh) return;
     if (on) {               // materials are shared between copies: give this one its own
@@ -201,7 +254,7 @@ function click(mx, my) {
   }
   const ray = mouseRay(mx, my, innerWidth, innerHeight, camera);
   let best = null, bestT = Infinity;
-  const pickable = [...props, { obj: d.obj, box: new THREE.Box3().setFromObject(d.obj) }];
+  const pickable = [...props, ...groundGifts.values(), { obj: d.obj, box: new THREE.Box3().setFromObject(d.obj) }];
   for (const it of pickable) {
     const t = rayAABB(ray, it.box);
     if (t !== null && t < bestT) { best = it.obj; bestT = t; }
@@ -212,6 +265,14 @@ function click(mx, my) {
     stuck = 0;
     select(null);
     sound.play('move');
+  } else if (best && groundGifts.has(best.userData.giftId)) {
+    if (!player.balance.locked && Math.hypot(best.position.x - player.pos.x, best.position.z - player.pos.z) <= pickupRadius) {
+      walkTarget = null;
+      takeGift(best);
+    } else {
+      walkTarget = best.position.clone().setY(0);
+      stuck = 0;
+    }
   } else {
     select(best);
     sound.play('select');
@@ -241,8 +302,12 @@ function updateCamera(dt) {
 
 // ------------------------------------------------------------ spike test helpers
 function setCarry(n) {
-  while (player.carry < n) player.gifts.add();
-  while (player.carry > n) scene.remove(player.gifts.removeTop(scene));
+  while (player.carry < n && groundGifts.size) takeGift(groundGifts.values().next().value.obj);
+  while (player.carry > n) {
+    const gift = player.gifts.removeTop(scene);
+    scene.remove(gift);
+    spawnGift(gift.userData.giftId);
+  }
 }
 let iceIndex = 0;
 const debugIceShortcut = new URLSearchParams(location.search).get('debug') === '1';
@@ -265,7 +330,14 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyE' && !e.repeat) player.wave();
   if (e.code === 'KeyM' && !e.repeat) sound.toggleMute();
   // ---- spike test keys (remove or hide before submission)
-  if (/^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!e.repeat && !player.balance.locked) {
+      const gift = nearbyGift();
+      if (gift) takeGift(gift);
+    }
+  }
+  if (debugIceShortcut && /^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
   if (e.code === 'KeyI' && !e.repeat) document.getElementById('icemode').textContent = ice.cycle();   // ice shader terms
   if (debugIceShortcut && e.code === 'KeyT' && !e.repeat) teleportToIce();                                // jump next to an ice patch
   if (e.code === 'F12') {
@@ -377,7 +449,7 @@ const hudBal = document.getElementById('balance');
 function updateHud() {
   hudDog.textContent = dog.state;
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
-    + ` · gifts ${player.carry} · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
+    + ` · 들고 있는 선물 ${player.carry}/5 · 트리 아래 ${groundGifts.size} · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
 const clock = new THREE.Clock();
