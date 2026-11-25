@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P3 Starter (three.js)</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #b8d6f7; font-family: system-ui, sans-serif; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 12px; top: 10px; padding: 8px 12px; border-radius: 8px;
+         background: rgba(20, 30, 40, 0.55); color: #fff; font-size: 13px; line-height: 1.5; pointer-events: none; }
+  #hud b { color: #ffd35c; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="hud">
+  WASD move, Shift sprint, F throw ball, E wave<br>
+  Click: select or walk there (also on the minimap), drag: turn camera, wheel: zoom<br>
+  B colliders, M mute, F12 screenshot<br>
+  dog: <b id="dogstate">-</b> &nbsp; selected: <b id="selected">-</b> &nbsp; <span id="fps"></span>
+</div>
+<script>
+  // show loading errors on screen (for example when the page was opened as file://)
+  const showError = (msg) => {
+    const hud = document.getElementById('hud');
+    hud.innerHTML += `<br><b style="color:#ff8a80">Error:</b> ${msg}`;
+  };
+  addEventListener('error', (e) => showError(e.message));
+  addEventListener('unhandledrejection', (e) => showError(e.reason?.message ?? e.reason));
+  if (location.protocol === 'file:') showError('run a local server (see README) instead of opening the file directly');
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>

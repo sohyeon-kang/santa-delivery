@@ -1,0 +1,5 @@
+dog sounds by pauliuw, https://opengameart.org/content/dog-sounds (CC0)
+  -> dog.ogg, dog_1.ogg, dog_2.ogg, dog_bark*.ogg, sad_dog*.ogg (converted from WAV to Ogg Vorbis)
+dog barking mono by HaelDB, https://opengameart.org/content/dog-barking-mono (CC0, also offered as OGA-BY 3.0)
+  -> dog_barking_mono.ogg
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/

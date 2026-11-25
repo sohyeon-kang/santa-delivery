@@ -1,0 +1,2054 @@
+{
+ "kitScale": {
+  "mini-characters": 2.2,
+  "cube-pets": 0.55,
+  "city-kit-suburban": 6.0,
+  "car-kit": 1.4,
+  "nature-kit": 3.0,
+  "city-kit-roads": 8.0,
+  "city-kit-commercial": 8.0
+ },
+ "ground": {
+  "size": 160,
+  "color": "#7cb85a"
+ },
+ "sun": {
+  "direction": [
+   -0.45,
+   -1.0,
+   -0.35
+  ],
+  "color": [
+   1.0,
+   0.95,
+   0.85
+  ],
+  "intensity": 2.0
+ },
+ "camera": {
+  "yaw": 0
+ },
+ "player": {
+  "model": "mini-characters/character-female-b.glb",
+  "pos": [
+   0,
+   0,
+   6
+  ],
+  "rotY": 0
+ },
+ "dog": {
+  "model": "cube-pets/animal-dog.glb",
+  "pos": [
+   10,
+   0,
+   -6
+  ],
+  "home": [
+   10,
+   0,
+   -6
+  ],
+  "wanderRadius": 4
+ },
+ "props": [
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -56.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -48.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -40.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -32.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-crossroad-path.glb",
+   "pos": [
+    -24.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -16.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -8.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-crossing.glb",
+   "pos": [
+    0.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    8.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    16.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-crossroad-path.glb",
+   "pos": [
+    24.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    32.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    40.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    48.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    56.0,
+    -0.08,
+    -16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -56.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -48.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -40.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -32.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-crossroad-path.glb",
+   "pos": [
+    -24.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -16.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -8.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-crossing.glb",
+   "pos": [
+    0.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    8.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    16.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-crossroad-path.glb",
+   "pos": [
+    24.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    32.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    40.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    48.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    56.0,
+    -0.08,
+    16
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    -48.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    -40.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    -32.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    -24.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    -8.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-crossing.glb",
+   "pos": [
+    -24,
+    -0.08,
+    0.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    8.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    24.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    32.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    40.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    -24,
+    -0.08,
+    48.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    -48.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    -40.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    -32.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    -24.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    -8.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-crossing.glb",
+   "pos": [
+    24,
+    -0.08,
+    0.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    8.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    24.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    32.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    40.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/road-straight.glb",
+   "pos": [
+    24,
+    -0.08,
+    48.0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    0,
+    -0.08,
+    0
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    -18,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    -14,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    -10,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    -6,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    6,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    10,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    14,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    18,
+    -0.08,
+    0
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    0,
+    -0.08,
+    -10
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    0,
+    -0.08,
+    -6
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    0,
+    -0.08,
+    6
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    0,
+    -0.08,
+    10
+   ],
+   "rotY": 0,
+   "scale": 0.5
+  },
+  {
+   "model": "nature-kit/statue_obelisk.glb",
+   "pos": [
+    0,
+    0.0,
+    0
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    -2.6,
+    0.0,
+    -2.6
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    2.6,
+    0.0,
+    -2.6
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    -2.6,
+    0.0,
+    2.6
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    2.6,
+    0.0,
+    2.6
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "nature-kit/tree_tall.glb",
+   "pos": [
+    -15.15,
+    0.0,
+    6.5
+   ],
+   "rotY": 55.2,
+   "scale": 0.98
+  },
+  {
+   "model": "nature-kit/tree_detailed.glb",
+   "pos": [
+    7.16,
+    0.0,
+    -9.62
+   ],
+   "rotY": 98.2,
+   "scale": 0.91
+  },
+  {
+   "model": "nature-kit/tree_tall.glb",
+   "pos": [
+    17.84,
+    0.0,
+    9.76
+   ],
+   "rotY": 96.1,
+   "scale": 1.08
+  },
+  {
+   "model": "nature-kit/tree_default.glb",
+   "pos": [
+    -12.67,
+    0.0,
+    -10.18
+   ],
+   "rotY": 119.0,
+   "scale": 1.13
+  },
+  {
+   "model": "nature-kit/tree_default.glb",
+   "pos": [
+    -6.83,
+    0.0,
+    -5.68
+   ],
+   "rotY": 104.6,
+   "scale": 1.14
+  },
+  {
+   "model": "nature-kit/tree_pineRoundB.glb",
+   "pos": [
+    -18.48,
+    0.0,
+    -6.1
+   ],
+   "rotY": 109.0,
+   "scale": 0.99
+  },
+  {
+   "model": "nature-kit/tree_default.glb",
+   "pos": [
+    10.99,
+    0.0,
+    -6.77
+   ],
+   "rotY": 120.0,
+   "scale": 0.93
+  },
+  {
+   "model": "nature-kit/tree_pineRoundB.glb",
+   "pos": [
+    -7.25,
+    0.0,
+    8.08
+   ],
+   "rotY": 357.0,
+   "scale": 0.87
+  },
+  {
+   "model": "nature-kit/tree_default.glb",
+   "pos": [
+    8.86,
+    0.0,
+    9.25
+   ],
+   "rotY": 310.5,
+   "scale": 1.01
+  },
+  {
+   "model": "nature-kit/tree_detailed.glb",
+   "pos": [
+    15.44,
+    0.0,
+    -6.22
+   ],
+   "rotY": 272.4,
+   "scale": 1.01
+  },
+  {
+   "model": "nature-kit/tree_fat.glb",
+   "pos": [
+    14.03,
+    0.0,
+    6.23
+   ],
+   "rotY": 71.7,
+   "scale": 1.02
+  },
+  {
+   "model": "nature-kit/tree_oak.glb",
+   "pos": [
+    -11.32,
+    0.0,
+    -5.73
+   ],
+   "rotY": 156.3,
+   "scale": 0.97
+  },
+  {
+   "model": "nature-kit/tree_fat.glb",
+   "pos": [
+    -7.55,
+    0.0,
+    -10.21
+   ],
+   "rotY": 18.8,
+   "scale": 0.96
+  },
+  {
+   "model": "nature-kit/tree_pineRoundB.glb",
+   "pos": [
+    -18.11,
+    0.0,
+    10.32
+   ],
+   "rotY": 309.6,
+   "scale": 1.11
+  },
+  {
+   "model": "nature-kit/tree_pineRoundB.glb",
+   "pos": [
+    17.25,
+    0.0,
+    -10.35
+   ],
+   "rotY": 149.2,
+   "scale": 0.97
+  },
+  {
+   "model": "nature-kit/tree_oak.glb",
+   "pos": [
+    5.68,
+    0.0,
+    5.78
+   ],
+   "rotY": 284.3,
+   "scale": 1.12
+  },
+  {
+   "model": "nature-kit/grass_large.glb",
+   "pos": [
+    4.91,
+    0.0,
+    6.79
+   ],
+   "rotY": 324.9
+  },
+  {
+   "model": "nature-kit/flower_redA.glb",
+   "pos": [
+    -11.8,
+    0.0,
+    5.85
+   ],
+   "rotY": 221.5
+  },
+  {
+   "model": "nature-kit/plant_bushSmall.glb",
+   "pos": [
+    -12.02,
+    0.0,
+    10.32
+   ],
+   "rotY": 210.5
+  },
+  {
+   "model": "nature-kit/plant_bushSmall.glb",
+   "pos": [
+    16.53,
+    0.0,
+    -5.1
+   ],
+   "rotY": 14.9
+  },
+  {
+   "model": "nature-kit/flower_redA.glb",
+   "pos": [
+    -16.8,
+    0.0,
+    -9.66
+   ],
+   "rotY": 342.7
+  },
+  {
+   "model": "nature-kit/flower_redA.glb",
+   "pos": [
+    -11.63,
+    0.0,
+    -5.44
+   ],
+   "rotY": 198.1
+  },
+  {
+   "model": "nature-kit/plant_bushSmall.glb",
+   "pos": [
+    10.82,
+    0.0,
+    -5.61
+   ],
+   "rotY": 86.4
+  },
+  {
+   "model": "nature-kit/grass_large.glb",
+   "pos": [
+    9.23,
+    0.0,
+    5.07
+   ],
+   "rotY": 38.0
+  },
+  {
+   "model": "nature-kit/plant_bush.glb",
+   "pos": [
+    17.24,
+    0.0,
+    7.75
+   ],
+   "rotY": 355.2
+  },
+  {
+   "model": "nature-kit/plant_bushSmall.glb",
+   "pos": [
+    14.2,
+    0.0,
+    9.37
+   ],
+   "rotY": 43.2
+  },
+  {
+   "model": "nature-kit/plant_bushSmall.glb",
+   "pos": [
+    -7.44,
+    0.0,
+    -6.14
+   ],
+   "rotY": 183.2
+  },
+  {
+   "model": "nature-kit/flower_redA.glb",
+   "pos": [
+    14.71,
+    0.0,
+    -5.34
+   ],
+   "rotY": 254.9
+  },
+  {
+   "model": "nature-kit/plant_bush.glb",
+   "pos": [
+    15.12,
+    0.0,
+    10.48
+   ],
+   "rotY": 319.0
+  },
+  {
+   "model": "nature-kit/flower_yellowA.glb",
+   "pos": [
+    -16.15,
+    0.0,
+    -6.01
+   ],
+   "rotY": 260.6
+  },
+  {
+   "model": "nature-kit/flower_redA.glb",
+   "pos": [
+    5.83,
+    0.0,
+    -6.03
+   ],
+   "rotY": 194.1
+  },
+  {
+   "model": "nature-kit/rock_largeA.glb",
+   "pos": [
+    -14,
+    0.0,
+    -7
+   ],
+   "rotY": 30
+  },
+  {
+   "model": "nature-kit/stump_round.glb",
+   "pos": [
+    13,
+    0.0,
+    8
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    -16,
+    0.0,
+    -12.7
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    -16,
+    0.0,
+    12.7
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    -8,
+    0.0,
+    -12.7
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    -8,
+    0.0,
+    12.7
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    8,
+    0.0,
+    -12.7
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    8,
+    0.0,
+    12.7
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    16,
+    0.0,
+    -12.7
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    16,
+    0.0,
+    12.7
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    -20.7,
+    0.0,
+    -8
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    20.7,
+    0.0,
+    -8
+   ],
+   "rotY": -90
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    -20.7,
+    0.0,
+    8
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-roads/light-square.glb",
+   "pos": [
+    20.7,
+    0.0,
+    8
+   ],
+   "rotY": -90
+  },
+  {
+   "model": "city-kit-roads/traffic-light.glb",
+   "pos": [
+    -20.7,
+    0.0,
+    -12.7
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/traffic-light.glb",
+   "pos": [
+    -20.7,
+    0.0,
+    12.7
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-roads/traffic-light.glb",
+   "pos": [
+    20.7,
+    0.0,
+    -12.7
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/traffic-light.glb",
+   "pos": [
+    20.7,
+    0.0,
+    12.7
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/building-type-a.glb",
+   "pos": [
+    -48,
+    0.0,
+    -27
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    -44.8,
+    0.0,
+    -21.4
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/tree-small.glb",
+   "pos": [
+    -52.6,
+    0.0,
+    -23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-h.glb",
+   "pos": [
+    -48,
+    0.0,
+    27
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    -51.2,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    -45.4,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -43.4,
+    0.0,
+    23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/sedan.glb",
+   "pos": [
+    -44.8,
+    0.0,
+    -22.6
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/building-type-b.glb",
+   "pos": [
+    -36,
+    0.0,
+    -27
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    -32.8,
+    0.0,
+    -21.4
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/tree-small.glb",
+   "pos": [
+    -40.6,
+    0.0,
+    -23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-i.glb",
+   "pos": [
+    -36,
+    0.0,
+    27
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    -39.2,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    -33.4,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -31.4,
+    0.0,
+    23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/suv.glb",
+   "pos": [
+    -39.2,
+    0.0,
+    22.6
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-c.glb",
+   "pos": [
+    -12,
+    0.0,
+    -27
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    -8.8,
+    0.0,
+    -21.4
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/tree-small.glb",
+   "pos": [
+    -16.6,
+    0.0,
+    -23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-j.glb",
+   "pos": [
+    -12,
+    0.0,
+    27
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    -15.2,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    -9.4,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -7.4,
+    0.0,
+    23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/hatchback-sports.glb",
+   "pos": [
+    -8.8,
+    0.0,
+    -22.6
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/building-type-d.glb",
+   "pos": [
+    0,
+    0.0,
+    -27
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    3.2,
+    0.0,
+    -21.4
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/tree-small.glb",
+   "pos": [
+    -4.6,
+    0.0,
+    -23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-k.glb",
+   "pos": [
+    0,
+    0.0,
+    27
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    -3.2,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    2.6,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    4.6,
+    0.0,
+    23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/van.glb",
+   "pos": [
+    -3.2,
+    0.0,
+    22.6
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-e.glb",
+   "pos": [
+    12,
+    0.0,
+    -27
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    15.2,
+    0.0,
+    -21.4
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/tree-small.glb",
+   "pos": [
+    7.4,
+    0.0,
+    -23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-l.glb",
+   "pos": [
+    12,
+    0.0,
+    27
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    8.8,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    14.6,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    16.6,
+    0.0,
+    23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/taxi.glb",
+   "pos": [
+    15.2,
+    0.0,
+    -22.6
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/building-type-f.glb",
+   "pos": [
+    36,
+    0.0,
+    -27
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    39.2,
+    0.0,
+    -21.4
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/tree-small.glb",
+   "pos": [
+    31.4,
+    0.0,
+    -23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-m.glb",
+   "pos": [
+    36,
+    0.0,
+    27
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    32.8,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    38.6,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    40.6,
+    0.0,
+    23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/suv-luxury.glb",
+   "pos": [
+    32.8,
+    0.0,
+    22.6
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-g.glb",
+   "pos": [
+    48,
+    0.0,
+    -27
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    51.2,
+    0.0,
+    -21.4
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/tree-small.glb",
+   "pos": [
+    43.4,
+    0.0,
+    -23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-suburban/building-type-n.glb",
+   "pos": [
+    48,
+    0.0,
+    27
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/driveway-long.glb",
+   "pos": [
+    44.8,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/planter.glb",
+   "pos": [
+    50.6,
+    0.0,
+    21.4
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    52.6,
+    0.0,
+    23.5
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/sedan-sports.glb",
+   "pos": [
+    51.2,
+    0.0,
+    -22.6
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -52.56,
+    0.0,
+    -34.03
+   ],
+   "rotY": 256.2
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -55.45,
+    0.0,
+    34.25
+   ],
+   "rotY": 275.9
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -45.72,
+    0.0,
+    -34.84
+   ],
+   "rotY": 79.5
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -45.3,
+    0.0,
+    35.98
+   ],
+   "rotY": 70.8
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -34.76,
+    0.0,
+    -33.18
+   ],
+   "rotY": 209.9
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -35.04,
+    0.0,
+    35.51
+   ],
+   "rotY": 140.9
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -17.73,
+    0.0,
+    -35.14
+   ],
+   "rotY": 274.2
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -17.26,
+    0.0,
+    34.74
+   ],
+   "rotY": 90.6
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -8.38,
+    0.0,
+    -34.68
+   ],
+   "rotY": 196.0
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -7.54,
+    0.0,
+    33.41
+   ],
+   "rotY": 281.0
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -0.53,
+    0.0,
+    -35.18
+   ],
+   "rotY": 342.1
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    -0.68,
+    0.0,
+    34.7
+   ],
+   "rotY": 190.2
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    8.99,
+    0.0,
+    -33.5
+   ],
+   "rotY": 225.2
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    10.18,
+    0.0,
+    34.99
+   ],
+   "rotY": 104.1
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    18.92,
+    0.0,
+    -34.26
+   ],
+   "rotY": 52.3
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    18.32,
+    0.0,
+    34.38
+   ],
+   "rotY": 190.7
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    37.47,
+    0.0,
+    -34.71
+   ],
+   "rotY": 343.3
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    35.56,
+    0.0,
+    35.28
+   ],
+   "rotY": 27.1
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    44.4,
+    0.0,
+    -35.08
+   ],
+   "rotY": 248.5
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    45.99,
+    0.0,
+    34.14
+   ],
+   "rotY": 98.5
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    53.58,
+    0.0,
+    -34.61
+   ],
+   "rotY": 8.7
+  },
+  {
+   "model": "city-kit-suburban/tree-large.glb",
+   "pos": [
+    53.62,
+    0.0,
+    34.97
+   ],
+   "rotY": 53.5
+  },
+  {
+   "model": "city-kit-commercial/building-a.glb",
+   "pos": [
+    -36,
+    0.0,
+    -8
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-commercial/building-b.glb",
+   "pos": [
+    36,
+    0.0,
+    -8
+   ],
+   "rotY": -90
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    -32,
+    -0.08,
+    -8
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    32,
+    -0.08,
+    -8
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-commercial/building-c.glb",
+   "pos": [
+    -36,
+    0.0,
+    0
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-commercial/building-d.glb",
+   "pos": [
+    36,
+    0.0,
+    0
+   ],
+   "rotY": -90
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    -32,
+    -0.08,
+    0
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    32,
+    -0.08,
+    0
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-commercial/building-h.glb",
+   "pos": [
+    -36,
+    0.0,
+    8
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "city-kit-commercial/building-g.glb",
+   "pos": [
+    36,
+    0.0,
+    8
+   ],
+   "rotY": -90
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    -32,
+    -0.08,
+    8
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-roads/tile-low.glb",
+   "pos": [
+    32,
+    -0.08,
+    8
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "city-kit-commercial/detail-parasol-a.glb",
+   "pos": [
+    -30.6,
+    0.0,
+    -5
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "city-kit-commercial/detail-parasol-b.glb",
+   "pos": [
+    30.6,
+    0.0,
+    -5
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "city-kit-commercial/detail-parasol-a.glb",
+   "pos": [
+    -30.6,
+    0.0,
+    5
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "city-kit-commercial/detail-parasol-b.glb",
+   "pos": [
+    30.6,
+    0.0,
+    5
+   ],
+   "rotY": 0,
+   "scale": 0.6
+  },
+  {
+   "model": "car-kit/police.glb",
+   "pos": [
+    -10,
+    0.0,
+    -14.2
+   ],
+   "rotY": 90
+  },
+  {
+   "model": "car-kit/delivery.glb",
+   "pos": [
+    31,
+    0.0,
+    -14.2
+   ],
+   "rotY": -90
+  },
+  {
+   "model": "car-kit/sedan.glb",
+   "pos": [
+    -26.0,
+    0.0,
+    -32
+   ],
+   "rotY": 0
+  },
+  {
+   "model": "car-kit/taxi.glb",
+   "pos": [
+    26.0,
+    0.0,
+    6
+   ],
+   "rotY": 180
+  },
+  {
+   "model": "car-kit/garbage-truck.glb",
+   "pos": [
+    14,
+    0.0,
+    17.8
+   ],
+   "rotY": -90
+  }
+ ]
+}
