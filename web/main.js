@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { Animator, Dog, Player } from './actors.js';
-import { SantaPlayer } from './santa.js';
+import { SantaPlayer, withCarryClips } from './santa.js';
 import { ICE_PATCHES, onIce } from './ice.js';
 import { buildIce } from './iceMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
@@ -105,7 +105,7 @@ p.obj.rotation.set(0, 0, 0);
 tilt.add(p.obj);
 rig.add(tilt);
 scene.add(rig);
-const player = new SantaPlayer(rig, tilt, new Animator(p.obj, p.clips), colliders, scene);
+const player = new SantaPlayer(rig, tilt, new Animator(p.obj, withCarryClips(p.clips)), colliders, scene);
 const d = await place(data.dog);
 const dog = new Dog(d.obj, new Animator(d.obj, d.clips), data.dog.home ?? data.dog.pos,
   data.dog.wanderRadius ?? 4, colliders);
