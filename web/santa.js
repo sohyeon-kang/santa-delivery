@@ -18,18 +18,31 @@ import { pushOut } from './physics.js';
 import { SlideBody, Balance } from './slide.js';
 import { onIce } from './ice.js';
 
-const GIFT = 0.3;                                   // m, box edge
-const GIFT_COLORS = ['#d7263d', '#1b998b', '#f4b400', '#3f51b5', '#e8e8f0'];
-const giftGeo = new THREE.BoxGeometry(GIFT, GIFT, GIFT);
-const ribbonGeoA = new THREE.BoxGeometry(GIFT * 1.02, GIFT * 1.02, GIFT * 0.18);
-const ribbonGeoB = new THREE.BoxGeometry(GIFT * 0.18, GIFT * 1.02, GIFT * 1.02);
+// Dimensions in metres. Scale only the visible box so stacked children keep their own size.
+const gifts = [
+  [0.48, 0.22, 0.36, '#d7263d'],
+  [0.30, 0.36, 0.28, '#1b998b'],
+  [0.40, 0.18, 0.30, '#f4b400'],
+  [0.26, 0.30, 0.24, '#3f51b5'],
+  [0.32, 0.24, 0.26, '#e8e8f0'],
+].map(([width, height, depth, color]) => ({
+  width, height, depth, material: new THREE.MeshStandardMaterial({ color, roughness: 0.6 }),
+}));
+const giftGeo = new THREE.BoxGeometry(1, 1, 1);
+const ribbonGeoA = new THREE.BoxGeometry(1.02, 1.02, 0.18);
+const ribbonGeoB = new THREE.BoxGeometry(0.18, 1.02, 1.02);
 const ribbonMat = new THREE.MeshStandardMaterial({ color: '#fff3c4', roughness: 0.4 });
 
 export function makeGift(i) {
-  const g = new THREE.Mesh(giftGeo, new THREE.MeshStandardMaterial({ color: GIFT_COLORS[i % GIFT_COLORS.length], roughness: 0.6 }));
-  g.add(new THREE.Mesh(ribbonGeoA, ribbonMat), new THREE.Mesh(ribbonGeoB, ribbonMat));
-  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return g;
+  const { width, height, depth, material } = gifts[i % gifts.length];
+  const gift = new THREE.Group();
+  const box = new THREE.Mesh(giftGeo, material);
+  box.scale.set(width, height, depth);
+  box.add(new THREE.Mesh(ribbonGeoA, ribbonMat), new THREE.Mesh(ribbonGeoB, ribbonMat));
+  box.traverse((o) => { o.castShadow = true; });
+  gift.add(box);
+  gift.userData.halfHeight = height * 1.02 / 2;   // include the ribbon
+  return gift;
 }
 
 // a bright "!" above the head while wobbling (shape + colour, not colour alone)
@@ -49,13 +62,18 @@ function makeAlert() {
 }
 
 export class GiftStack {
-  static BASE = new THREE.Vector3(0, 0.95, 0.36);   // first gift, in the tilt frame (m)
-  constructor(tilt) { this.tilt = tilt; this.boxes = []; this.made = 0; }
+  static BASE = new THREE.Vector3(0, 0.69, 0.68);   // bottom of stack, in the tilt frame (m)
+  constructor(grip) { this.grip = grip; this.boxes = []; this.made = 0; }
   get count() { return this.boxes.length; }
   add() {
     const g = makeGift(this.made++);
-    const parent = this.boxes.length ? this.boxes[this.boxes.length - 1] : this.tilt;
-    if (this.boxes.length) g.position.set(0, GIFT, 0); else g.position.copy(GiftStack.BASE);
+    const parent = this.boxes.length ? this.boxes[this.boxes.length - 1] : this.grip;
+    if (this.boxes.length) {
+      g.position.y = parent.userData.halfHeight + g.userData.halfHeight;
+    } else {
+      g.position.copy(GiftStack.BASE);
+      g.position.y += g.userData.halfHeight;
+    }
     parent.add(g);
     this.boxes.push(g);
   }
@@ -87,9 +105,20 @@ class FallingGift {
     this.vel.y -= 9.8 * dt;
     this.mesh.position.addScaledVector(this.vel, dt);
     this.mesh.rotation.x += 4 * dt;
-    if (this.mesh.position.y < GIFT / 2) { this.mesh.position.y = GIFT / 2; this.broken = 1e-6; return 'hit'; }
+    if (this.mesh.position.y < this.mesh.userData.halfHeight) { this.mesh.position.y = this.mesh.userData.halfHeight; this.broken = 1e-6; return 'hit'; }
     return true;
   }
+}
+
+// Keep the full stride, replacing only the tracks animated by the holding pose.
+export function withCarryClips(clips) {
+  const hold = clips.find(clip => clip.name === 'holding-both');
+  const heldTracks = new Set(hold.tracks.map(track => track.name));
+  const locomotion = clips.filter(clip => clip.name === 'walk' || clip.name === 'sprint');
+  return clips.concat(locomotion.map(clip => {
+    const steps = clip.tracks.filter(track => !heldTracks.has(track.name));
+    return new THREE.AnimationClip('carry-' + clip.name, clip.duration, steps.concat(hold.tracks));
+  }));
 }
 
 export class SantaPlayer extends Player {
@@ -100,7 +129,11 @@ export class SantaPlayer extends Player {
     this.body = new SlideBody();
     this.balance = new Balance();
     this.spinDirection = 1;
-    this.gifts = new GiftStack(tilt);
+    // Preserve the stack's metre-based rest frame while following the animated chest.
+    const grip = new THREE.Group();
+    tilt.add(grip);
+    tilt.getObjectByName('torso').attach(grip);
+    this.gifts = new GiftStack(grip);
     this.falling = [];
     this.onIce = false;
     this.alert = makeAlert();
@@ -180,7 +213,10 @@ export class SantaPlayer extends Player {
     const speed = this.body.speed;
     let clip;
     if (locked) clip = 'fall';
-    else if (hasInput && speed > 0.3) clip = sprint ? 'sprint' : 'walk';
+    else if (hasInput && speed > 0.3) {
+      clip = sprint ? 'sprint' : 'walk';
+      if (this.carry > 0) clip = 'carry-' + clip;
+    }
     else clip = this.carry > 0 ? 'holding-both' : 'idle';   // sliding with no input: stand still and glide
     if (this.emote > 0) { this.emote -= dt; if (hasInput) this.emote = 0; }
     if (this.emote <= 0) this.anim.play(clip);
