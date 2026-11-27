@@ -25,7 +25,7 @@ export class Music {
     this.audio.loop = track === 'title' || track === 'loop';
     this.audio.volume = track === 'ending' ? 0.65 : 0.45;
     this.audio.play().catch(error => {
-      if (this.track === track && error.name !== 'AbortError') this.onError();
+      if (this.track === track && error.name !== 'AbortError' && !(track === 'title' && error.name === 'NotAllowedError')) this.onError();
     });
   }
 

@@ -15,13 +15,22 @@ import { snowMaterial, snowProfile } from './snowMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
 import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js';
 import { Sound } from './sound.js';
-import { Music } from './music.js';
+import { Music } from './music.js?v=intro-20261128-2';
 import { DeliveryEffects } from './deliveryEffects.js';
 
 const MODELS = '../assets/models/';
 const params = new URLSearchParams(location.search);   // test options: cam, demo, t
 document.body.classList.toggle('debug',params.get('debug') === '1');
 const CLICK_PIXELS = 5;   // a press that moves less than this is a click, not a camera drag
+let activeHint = null;
+const seenHints = new Set();
+function notify(title, text = '', priority = 1, duration = 4, once = null) {
+  if (once && seenHints.has(once)) return;
+  const now = performance.now();
+  if (activeHint && activeHint.until > now && activeHint.priority > priority) return;
+  activeHint = { title, text, priority, until:now+duration*1000 };
+  if (once) seenHints.add(once);
+}
 
 // ------------------------------------------------------------ renderer and scene
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -216,6 +225,9 @@ for (let id = 0; id < 5; id++) spawnGift(id);
 function takeGift(gift) {
   groundGifts.delete(gift.userData.giftId);
   player.gifts.add(gift);
+  if (player.carry >= 4) notify('선물이 너무 많아요! 곧 떨어져요!','',8,3);
+  else if (player.carry === 3) notify('선물이 흔들리기 시작해요!','',5,4);
+  else notify('★ 별이 뜬 집으로 가세요','미니맵에서도 찾을 수 있어요',3,5,'pickup');
 }
 function nearbyGift() {
   let nearest = null, distance = pickupRadius;
@@ -226,6 +238,7 @@ function nearbyGift() {
   return nearest;
 }
 player.onGiftBreak.push((pl, q, id) => {
+  notify('선물이 깨졌어요!','다른 트리 아래에 다시 생겨요',9,5);
   sound.play('gift_break', q);
   spawnGift(id);
 });
@@ -322,7 +335,7 @@ const ending = document.getElementById('ending');
 const celebration = document.getElementById('celebration');
 const startOverlay = document.getElementById('start-overlay');
 const startButton = document.getElementById('start-game');
-const previewMusic = document.getElementById('preview-music');
+const showInstructions = document.getElementById('show-instructions');
 const gameHud = document.getElementById('game-hud');
 const guide = document.getElementById('guide');
 const guideTitle = document.getElementById('guide-title');
@@ -345,18 +358,13 @@ gameHud.hidden = guide.hidden = !automated;
 function toggleSound() {
   sound.toggleMute();
   music.setMuted(sound.muted);
-  soundToggle.textContent = sound.muted ? '소리 켜기 · M' : '소리 끄기 · M';
+  soundToggle.textContent = sound.muted ? '소리 켜기' : '소리 끄기';
   soundToggle.setAttribute('aria-pressed',String(sound.muted));
   document.getElementById('audio-status').hidden = true;
   sound.resume();
 }
 soundToggle.addEventListener('click',toggleSound);
-previewMusic.addEventListener('click',() => {
-  music.setMuted(sound.muted);
-  music.preview();
-  previewMusic.textContent = '캐롤 처음부터 듣기';
-});
-startButton.addEventListener('click',() => {
+function beginGame() {
   if (startedAt !== null) return;
   startedAt = performance.now();
   keys.clear();
@@ -368,7 +376,47 @@ startButton.addEventListener('click',() => {
   if (!params.has('cam')) Object.assign(cam,{dist:9,pitch:0.35});
   renderer.domElement.tabIndex = -1;
   renderer.domElement.focus();
+}
+startButton.addEventListener('click',beginGame);
+const instructionPages = [
+  ['선물부터 챙겨요!','트리 아래 선물 가까이에서 Space 또는 클릭으로 주워요.'],
+  ['미끄러워도 괜찮아요!','WASD로 이동하고 Shift로 달려요.\n휘청이면 Shift를 떼어 버텨요.'],
+  ['별빛을 따라 선물을 전해요!','별이 뜬 집 앞에서 Space 또는 집을 클릭하세요.\n다섯 집에 선물을 전하면 성공이에요.'],
+];
+let instructionPage = 0;
+function showInstructionPage() {
+  document.getElementById('instruction-progress').textContent = `${instructionPage+1} / 3`;
+  document.getElementById('instruction-title').textContent = instructionPages[instructionPage][0];
+  document.getElementById('instruction-copy').textContent = instructionPages[instructionPage][1];
+  document.getElementById('instruction-next').textContent = instructionPage === 2 ? '게임 시작' : '다음';
+  document.getElementById('instruction-next').classList.toggle('red-button',instructionPage === 2);
+}
+showInstructions.addEventListener('click',() => {
+  document.getElementById('intro-panel').hidden = true;
+  document.querySelector('.start-actions').hidden = true;
+  document.getElementById('instructions').hidden = false;
+  document.getElementById('instruction-actions').hidden = false;
+  showInstructionPage();
 });
+document.getElementById('instruction-next').addEventListener('click',() => {
+  if (instructionPage === 2) beginGame();
+  else { instructionPage++; showInstructionPage(); }
+});
+document.getElementById('instruction-back').addEventListener('click',() => {
+  if (instructionPage > 0) { instructionPage--; showInstructionPage(); }
+  else {
+    document.getElementById('intro-panel').hidden = false;
+    document.querySelector('.start-actions').hidden = false;
+    document.getElementById('instructions').hidden = true;
+    document.getElementById('instruction-actions').hidden = true;
+  }
+});
+document.getElementById('skip-instructions').addEventListener('click',beginGame);
+function resumeTitleMusic() {
+  if (startedAt === null && music.audio.paused) music.preview();
+}
+for (const event of ['pointerdown','keydown']) addEventListener(event,resumeTitleMusic);
+music.preview();
 function celebrate() {
   const colors = ['#ffe17a', '#fff4c2', '#ff8f8f', '#9fe0ff', '#dcb6ff'];
   for (let i = 0; i < 5; i++) {
@@ -415,6 +463,10 @@ function distanceToHome({ box }) {
   return Math.hypot(x, z);
 }
 function deliverTo(target) {
+  if (target && deliveredHomes.has(target) && distanceToHome(target) <= 2) {
+    notify('이미 선물한 집이에요','아직 별이 뜬 집으로 가세요',4,4);
+    return false;
+  }
   if (!target || pendingDelivery || deliveredHomes.has(target) || !player.carry || player.balance.locked || distanceToHome(target) > 2) return false;
   const gift = player.gifts.removeTop(scene);
   const start = gift.position.clone();
@@ -445,16 +497,17 @@ function finishDelivery({ target, gift, finish }) {
   minimap.setDeliveryTargets(deliveryTargets.flatMap(({ obj }, i) =>
     deliveredHomes.has(deliveryTargets[i]) ? [] : [{ position: obj.position, texture: targetMarkers[i].texture }]));
   deliveryNoticeTime = 3.0;
-  deliveryNotice.textContent = `배달 완료! ${deliveredHomes.size} / 5`;
+  deliveryNotice.textContent = `선물 전달 완료! ${deliveredHomes.size} / 5`;
   deliveryNotice.hidden = false;
+  notify(`선물 전달 완료! ${deliveredHomes.size} / 5`,deliveredHomes.size < 5 ? '다음 별이 뜬 집으로 가세요' : '',8,4);
   deliveryEffects.burst(finish);
   sound.play('delivery_chime');
   if (deliveredHomes.size === 5) {
     showEnding();
   }
 }
-function nearbyHome() {
-  return deliveryTargets.filter(target => !deliveredHomes.has(target))
+function nearbyHome(includeDelivered = false) {
+  return deliveryTargets.filter(target => includeDelivered || !deliveredHomes.has(target))
     .sort((a, b) => distanceToHome(a) - distanceToHome(b))[0];
 }
 
@@ -568,7 +621,7 @@ addEventListener('keydown', (e) => {
     if (!e.repeat && !player.balance.locked) {
       const gift = nearbyGift();
       if (gift) takeGift(gift);
-      else deliverTo(nearbyHome());
+      else deliverTo(nearbyHome(true));
     }
   }
   if (debugIceShortcut && /^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
@@ -729,32 +782,39 @@ function updateHud() {
   setText(deliveryCount,`${deliveredHomes.size} / 5`);
   setText(carryCount,`${player.carry} / 5`);
   setText(elapsedTime,elapsed);
-  let title = deliveredHomes.size ? '다음 선물을 주우세요' : '트리 아래에서 선물을 주우세요';
-  let instruction = '선물 가까이에서 Space 또는 선물을 클릭하세요.';
-  if (pendingDelivery) {
-    title = '선물을 건네고 있어요';
-    instruction = '잠시 기다리면 배달이 완료돼요.';
-  } else if (player.carry && distanceToHome(nearbyHome()) <= 2) {
-    title = '집 앞에 도착했어요';
-    instruction = 'Space 또는 별이 있는 집을 클릭해 배달하세요.';
-  } else if (player.carry >= 3) {
-    title = '선물을 많이 들고 있어요';
-    instruction = '많이 들수록 흔들려요. 급회전할 때는 Shift를 떼어 버텨 보세요.';
-  } else if (player.carry) {
-    title = '별이 빛나는 집으로 가세요';
-    instruction = '미니맵의 별을 따라가세요. 집 앞에서 Space로 배달할 수 있어요.';
+  if (startedAt !== null && finishedTime === null) {
+    if (player.onIce) notify('빙판이에요! 더 미끄러워요','속도를 줄이고 미리 방향을 바꾸세요',4,5,'ice');
+    if ((keys.has('ShiftLeft') || keys.has('ShiftRight')) && player.body.speed > 0.3) {
+      notify('Shift를 누르면 빨라져요','급회전은 조심하세요',2,4,'sprint');
+    }
   }
+  let title = player.carry ? '★ 별이 뜬 집으로 가세요' : '트리 아래 선물을 주우세요';
+  let instruction = player.carry ? '미니맵에서도 찾을 수 있어요' : '가까이에서 Space 또는 클릭';
+  const target = nearbyHome();
+  const atHome = player.carry && target && distanceToHome(target) <= 2;
+  if (atHome) {
+    title = 'Space 또는 집 클릭으로 선물을 전하세요';
+    instruction = '';
+  }
+  if (activeHint && activeHint.until > performance.now() && (!atHome || activeHint.priority >= 7)) {
+    title = activeHint.title;
+    instruction = activeHint.text;
+  }
+  const wobbling = player.balance.state === 'WOBBLE';
+  if (wobbling) { title = '휘청! Shift를 떼세요'; instruction = ''; }
+  guide.classList.toggle('urgent',wobbling);
+  guideText.hidden = !instruction;
   setText(guideTitle,title);
   setText(guideText,instruction);
   const loadWarning = player.carry >= 3 ? ' · 선물 휘청임' : '';
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
-    + ` · 들고 있는 선물 ${player.carry}/5${loadWarning} · 트리 아래 ${groundGifts.size} · 배달 ${deliveredHomes.size}/5`
+    + ` · 들고 있는 선물 ${player.carry}/5${loadWarning} · 트리 아래 ${groundGifts.size} · 전달 ${deliveredHomes.size}/5`
     + ` · 시간 ${elapsed}`
     + ` · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
-startButton.disabled = previewMusic.disabled = false;
-startButton.textContent = '배달 시작';
+startButton.disabled = showInstructions.disabled = false;
+startButton.textContent = '게임 시작';
 const clock = new THREE.Clock();
 let frames = 0, fpsTime = 0;
 updateCamera(0);
