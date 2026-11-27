@@ -6,7 +6,8 @@
 //   - icons live on layer 1, which only the minimap camera renders
 //   - clicking the map makes the player walk to that spot
 import * as THREE from 'three';
-import { ICE_PATCHES } from './ice.js';
+import { ICE_PATCHES } from './ice.js?v=park-ice-20261128-4';
+import { parkPathGeometry } from './parkPathGeometry.js';
 
 export const SIZE = 320;     // CSS pixels
 export const MARGIN = 16;    // CSS pixels from the window corner
@@ -88,6 +89,15 @@ export class Minimap {
     this.wedge.layers.set(ICON_LAYER);
     this.wedge.frustumCulled = false;
     for (const patch of ICE_PATCHES) {
+      if (patch.shape === 'bezier') {
+        const path = new THREE.Mesh(parkPathGeometry(patch),new THREE.MeshBasicMaterial({color:patch.color,depthTest:false,depthWrite:false}));
+        path.position.y = Y;
+        path.layers.set(ICON_LAYER);
+        path.renderOrder = 12;
+        path.name = 'park-bezier-minimap';
+        scene.add(path);
+        continue;
+      }
       const iceIcon = icon(iceShape(patch.shape), '#cff1fc', 12);
       iceIcon.scale.set(patch.h[0], patch.h[1], 1);
       this.place(iceIcon, { x: patch.c[0], z: patch.c[1] });

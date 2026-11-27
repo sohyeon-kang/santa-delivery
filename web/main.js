@@ -8,12 +8,12 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { Animator, Player, headingOf, turnToward } from './actors.js';
 import { winterVillage, buildWinterHouse, decorateVillage, winterRoadMaterial, GIFT_TREE_POSITIONS } from './village.js';
 import { createVillagers } from './villagers.js';
-import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js';
-import { ICE_PATCHES, onIce } from './ice.js';
-import { buildIce } from './iceMaterial.js';
+import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js?v=park-ice-20261128-4';
+import { ICE_PATCHES, onIce } from './ice.js?v=park-ice-20261128-4';
+import { buildIce } from './iceMaterial.js?v=park-ice-20261128-4';
 import { snowMaterial, snowProfile } from './snowMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
-import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js';
+import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js?v=park-ice-20261128-4';
 import { Sound } from './sound.js';
 import { Music } from './music.js?v=intro-20261128-2';
 import { DeliveryEffects } from './deliveryEffects.js';
@@ -818,6 +818,7 @@ startButton.textContent = '게임 시작';
 const clock = new THREE.Clock();
 let frames = 0, fpsTime = 0;
 updateCamera(0);
+minimap.update({player,ball,walkTarget,mainCamera:camera,camYaw:cam.yaw});
 
 if (params.get('t')) {
   // test mode: simulate a fixed number of 1/60 s steps, then keep showing that frame

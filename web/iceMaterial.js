@@ -13,6 +13,7 @@
 // Key I cycles uMode so each term can be shown on its own (screenshots for the report):
 //   0 full   1 ambient+diffuse   2 +specular   3 +Fresnel·environment   4 normals as colours
 import * as THREE from 'three';
+import { parkPathGeometry } from './parkPathGeometry.js';
 
 export const ICE_MODES = ['full', 'diffuse', '+specular', '+fresnel env', 'normals'];
 
@@ -49,6 +50,10 @@ uniform int uShape;
 uniform int uMode;
 uniform vec3 uFogColor;
 uniform float uFogDensity;
+#ifdef PARK_PATH
+uniform vec2 uPath[PATH_POINT_COUNT];
+uniform float uPathRadius;
+#endif
 
 varying vec3 vWorldPos;
 varying vec3 vWorldNormal;
@@ -99,6 +104,15 @@ float sdEllipse(vec2 p, vec2 radius) {
   return (length(p / radius) - 1.0) * min(radius.x, radius.y);
 }
 float patchDistance(vec2 p) {
+#ifdef PARK_PATH
+  float distanceToPath = 10000.0;
+  for (int i = 0; i < PATH_POINT_COUNT - 1; i++) {
+    vec2 a = uPath[i], edge = uPath[i+1]-a;
+    float t = clamp(dot(p-a,edge)/dot(edge,edge),0.0,1.0);
+    distanceToPath = min(distanceToPath,length(p-a-t*edge));
+  }
+  return distanceToPath-uPathRadius;
+#else
   if (uShape == 1 || uShape == 4) return max(abs(p.x) - uHalf.x, abs(p.y) - uHalf.y);
   if (uShape == 2) return length(p) - min(uHalf.x, uHalf.y);
   if (uShape == 3) {
@@ -106,13 +120,18 @@ float patchDistance(vec2 p) {
     return max(-p.y - uHalf.y, (p.y - uHalf.y + slope * abs(p.x)) / length(vec2(slope, 1.0)));
   }
   return sdEllipse(p, uHalf);
+#endif
 }
 
 void main() {
   vec2 p = vWorldPos.xz;
 
   // inside < 0 < outside; a little noise so the outline is not a perfect rectangle
+#ifdef PARK_PATH
+  float d = patchDistance(p);
+#else
   float d = patchDistance(vLocal) + (fbm(p * 0.8) - 0.5) * 0.22;
+#endif
   float alpha = 1.0 - smoothstep(-0.25, 0.0, d);
   if (alpha <= 0.001) discard;
   float rim = smoothstep(-0.9, -0.05, d);              // frosty white near the edge
@@ -125,7 +144,7 @@ void main() {
 
   float fracture = crack(p);
   vec3 base = mix(uIceColor, vec3(0.85, 0.92, 1.0), clamp(rim * 0.55 + fracture * 0.24, 0.0, 1.0));
-  base = mix(base, vec3(1.0), uWhiteIce);
+  base = mix(base, vec3(0.86,0.92,0.96), uWhiteIce*0.35);
   vec3 ambient = uAmbient * base;
   vec3 diffuse = base * uSunColor * NdotL;
   float spec = NdotL > 0.0 ? pow(max(dot(N, H), 0.0), uShininess) : 0.0;
@@ -146,10 +165,11 @@ void main() {
   else if (uMode == 3) color = mix(ambient + diffuse, env, F) + spec * uSunColor;
   else if (uMode == 4) color = N * 0.5 + 0.5;
   else                 color = mix(ambient + diffuse, env, F) + (spec + glint) * uSunColor;
-  float veins = fracture * uWhiteIce * 0.16;
-  color = mix(color, vec3(0.94, 0.96, 0.97) - veins + vec3(glint * 0.14), uWhiteIce * 0.92);
+  // Keep the lighting and sky reflection: an opaque white override looks painted.
+  color += uWhiteIce * (vec3(rim*0.055) - vec3(fracture*0.035));
 
-  gl_FragColor = vec4(color, alpha * mix(0.9, 1.0, F));
+  float opacity = mix(mix(0.9,1.0,F),mix(0.50,0.88,F),uWhiteIce);
+  gl_FragColor = vec4(color, alpha * opacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 
@@ -160,7 +180,9 @@ void main() {
 `;
 
 export function makeIceMaterial(patch, { envMap, sunDir, sunColor, sunIntensity, fog }) {
+  const curved = patch.shape === 'bezier';
   return new THREE.ShaderMaterial({
+    defines:curved?{PARK_PATH:1,PATH_POINT_COUNT:patch.points.length}:{},
     vertexShader,
     fragmentShader,
     transparent: true,
@@ -169,6 +191,10 @@ export function makeIceMaterial(patch, { envMap, sunDir, sunColor, sunIntensity,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
     uniforms: {
+      ...(curved?{
+        uPath:{value:patch.points.map(([x,z])=>new THREE.Vector2(x,z))},
+        uPathRadius:{value:patch.halfWidth},
+      }:{}),
       uSize: { value: new THREE.Vector2(patch.h[0] * 2 + 1, patch.h[1] * 2 + 1) },
       uHalf: { value: new THREE.Vector2(patch.h[0], patch.h[1]) },
       uSunDir: { value: sunDir.clone().negate().normalize() },     // scene sunDir points away from the sun
@@ -178,8 +204,8 @@ export function makeIceMaterial(patch, { envMap, sunDir, sunColor, sunIntensity,
       uWhiteIce: { value: patch.color === '#ffffff' ? 1 : 0 },
       uShape: { value: ['ellipse', 'rectangle', 'circle', 'triangle', 'long-rectangle'].indexOf(patch.shape) },
       uShininess: { value: 256.0 },
-      uF0: { value: 0.04 },        // a bit above real ice (0.02) so the sky shows
-      uEnvIntensity: { value: patch.color === '#ffffff' ? 0.12 : 1.0 },
+      uF0: { value: patch.color === '#ffffff' ? 0.07 : 0.04 },
+      uEnvIntensity: { value: patch.color === '#ffffff' ? 0.85 : 1.0 },
       uEnvMap: { value: envMap },
       uMode: { value: 0 },
       uFogColor: { value: fog ? fog.color : new THREE.Color(1, 1, 1) },
@@ -194,17 +220,23 @@ export function buildIce(scene, patches, roadBoxes, opts) {
   group.name = 'ice';
   const materials = [];
   for (const patch of patches) {
+    const curved = patch.shape === 'bezier';
     const [cx, cz] = patch.c;
     let top = 0;
+    const samples = curved ? patch.points : [[cx,cz]];
     for (const b of roadBoxes) {
-      if (cx >= b.min.x && cx <= b.max.x && cz >= b.min.z && cz <= b.max.z) top = Math.max(top, b.max.y);
+      if (samples.some(([x,z])=>x>=b.min.x && x<=b.max.x && z>=b.min.z && z<=b.max.z)) top = Math.max(top,b.max.y);
     }
     // a margin of 0.5 m on every side so the noisy outline has room
-    const geo = new THREE.PlaneGeometry(patch.h[0] * 2 + 1, patch.h[1] * 2 + 1);
+    const geo = curved ? parkPathGeometry(patch,0.06) : new THREE.PlaneGeometry(patch.h[0] * 2 + 1, patch.h[1] * 2 + 1);
     const mat = makeIceMaterial(patch, opts);
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(cx, top + 0.015, cz);
+    if (curved) mesh.position.y = top+0.015;
+    else {
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(cx, top + 0.015, cz);
+    }
+    mesh.name = curved ? 'park-bezier-ice' : 'ice-patch';
     mesh.renderOrder = 2;
     group.add(mesh);
     materials.push(mat);
