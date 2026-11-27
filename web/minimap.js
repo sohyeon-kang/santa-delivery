@@ -6,10 +6,11 @@
 //   - icons live on layer 1, which only the minimap camera renders
 //   - clicking the map makes the player walk to that spot
 import * as THREE from 'three';
+import { ICE_PATCHES } from './ice.js';
 
-export const SIZE = 240;     // CSS pixels
+export const SIZE = 320;     // CSS pixels
 export const MARGIN = 16;    // CSS pixels from the window corner
-export const RANGE = 24;     // half width of the map square, m
+export const RANGE = 34;     // show one quarter of the former map area around the player
 const ICON_LAYER = 1;
 const Y = 40;                // icons float above everything
 
@@ -25,6 +26,15 @@ function arrowShape(size) {         // triangle pointing along +Y in shape space
   const s = new THREE.Shape();
   s.moveTo(0, size); s.lineTo(-0.7 * size, -0.6 * size); s.lineTo(0.7 * size, -0.6 * size); s.closePath();
   return new THREE.ShapeGeometry(s);
+}
+function iceShape(shape) {
+  if (shape === 'rectangle' || shape === 'long-rectangle') return new THREE.PlaneGeometry(2, 2);
+  if (shape === 'triangle') {
+    const triangle = new THREE.Shape();
+    triangle.moveTo(0, 1); triangle.lineTo(-1, -1); triangle.lineTo(1, -1); triangle.closePath();
+    return new THREE.ShapeGeometry(triangle);
+  }
+  return new THREE.CircleGeometry(1, 32);
 }
 
 export class Minimap {
@@ -46,6 +56,12 @@ export class Minimap {
     this.wedge.renderOrder = 18;
     this.wedge.layers.set(ICON_LAYER);
     this.wedge.frustumCulled = false;
+    for (const patch of ICE_PATCHES) {
+      const iceIcon = icon(iceShape(patch.shape), '#cff1fc', 12);
+      iceIcon.scale.set(patch.h[0], patch.h[1], 1);
+      this.place(iceIcon, { x: patch.c[0], z: patch.c[1] });
+      scene.add(iceIcon);
+    }
     for (const m of [...Object.values(this.icons), this.wedge]) scene.add(m);
   }
 

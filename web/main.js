@@ -9,6 +9,7 @@ import { Animator, Dog, Player } from './actors.js';
 import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js';
 import { ICE_PATCHES, onIce } from './ice.js';
 import { buildIce } from './iceMaterial.js';
+import { snowMaterial, snowProfile } from './snowMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
 import { Minimap, RANGE, SIZE } from './minimap.js';
 import { Sound } from './sound.js';
@@ -35,7 +36,7 @@ addEventListener('resize', () => {
 });
 
 const data = await (await fetch('../' + (params.get('scene') ?? 'scene.json'))).json();   // ?scene=other.json
-const sky = new THREE.Color('#b8d6f7');
+const sky = new THREE.Color('#91a9ca');
 scene.background = sky;
 scene.fog = new THREE.FogExp2(sky, 0.012);
 
@@ -43,12 +44,12 @@ scene.fog = new THREE.FogExp2(sky, 0.012);
 const hdr = await new RGBELoader().loadAsync('../assets/hdri/kloofendal_48d_partly_cloudy_puresky_1k.hdr');
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromEquirectangular(hdr).texture;
-scene.environmentIntensity = 0.6;
+scene.environmentIntensity = 0.57;
 // keep the equirectangular HDR: the ice shader reads it as its environment map
 
 // sun with a shadow camera that follows the player
 const sunDir = new THREE.Vector3(...data.sun.direction).normalize();
-const sun = new THREE.DirectionalLight(new THREE.Color(...data.sun.color), data.sun.intensity * 1.2);
+const sun = new THREE.DirectionalLight(new THREE.Color(...data.sun.color), data.sun.intensity * 0.86);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 140 });
@@ -57,9 +58,9 @@ sun.shadow.normalBias = 0.02;
 scene.add(sun, sun.target);
 
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(data.ground.size, data.ground.size),
-  new THREE.MeshStandardMaterial({ color: data.ground.color, roughness: 1 }));
+  new THREE.MeshStandardMaterial({ color: '#e4eef9', roughness: 1 }));
 ground.rotation.x = -Math.PI / 2;
-ground.position.y = -0.02;     // 2 cm below y = 0, so road tiles never fight with the grass
+ground.position.y = -0.02;     // Keep the ground below the road tiles.
 ground.receiveShadow = true;
 scene.add(ground);
 
@@ -71,16 +72,21 @@ function loadGLB(rel) {
   return cache.get(rel);
 }
 
-async function place(desc) {
+async function place(desc, winter = false) {
   const gltf = await loadGLB(desc.model);
   const kit = desc.model.split('/')[0];
   // SkeletonUtils.clone also copies bones, so skinned characters can be instanced
   const obj = SkeletonUtils.clone(gltf.scene);
   obj.name = desc.model.split('/').pop().replace('.glb', '');
+  const profile = winter ? snowProfile(kit, obj.name) : null;
   obj.traverse((o) => {
     if (o.isMesh) {
       o.castShadow = o.receiveShadow = true;
-      if (o.material.map) o.material.map.magFilter = THREE.NearestFilter;   // crisp color atlas
+      const prepare = (material) => {
+        if (material.map) material.map.magFilter = THREE.NearestFilter;
+        return snowMaterial(material, profile);
+      };
+      o.material = Array.isArray(o.material) ? o.material.map(prepare) : prepare(o.material);
     }
   });
   obj.position.set(...(desc.pos ?? [0, 0, 0]));
@@ -95,7 +101,9 @@ const giftFiles = ['present-a-cube', 'present-b-cube', 'present-a-rectangle',
 setGiftModels(await Promise.all(giftFiles.map(async name =>
   (await loadGLB('holiday-kit/' + name + '.glb')).scene)));
 
-const props = await Promise.all(data.props.map(place));
+const props = await Promise.all(data.props
+  .filter(({ model }) => !/^nature-kit\/(grass_|flower_)/.test(model))
+  .map((desc) => place(desc, true)));
 // world-space AABBs (rest pose): picking, and ground-plane colliders (see physics.js)
 for (const p of props) { p.obj.updateMatrixWorld(true); p.box = new THREE.Box3().setFromObject(p.obj); }
 const colliders = props.map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
@@ -130,7 +138,8 @@ player.onThrow.push((pl) => dog.ballThrown(ball, pl.pos));
 const sound = new Sound(scene);
 sound.load().catch((e) => console.warn('sound off:', e));   // load in the background; the game starts silent
 // hard ground (roads, pavements, plazas) for footstep sounds: footprints of road and tile pieces
-const hardGround = props.filter((p) => p.obj.name.includes('road') || p.obj.name.includes('tile')).map((p) => p.box);
+const hardGround = props.filter((p) => p.obj.name.includes('road') || p.obj.name.includes('tile')
+  || p.obj.name.includes('driveway')).map((p) => p.box);
 const surface = (q) => (onIce(q.x, q.z) ? 'ice'
   : hardGround.some((b) => q.x >= b.min.x && q.x <= b.max.x && q.z >= b.min.z && q.z <= b.max.z) ? 'hard' : 'grass');
 
@@ -220,25 +229,8 @@ marker.rotation.x = -Math.PI / 2;
 marker.visible = false;
 scene.add(marker);
 
-function setHighlight(obj, on) {
-  // Keep the Christmas tree's original palette when clicked.
-  if (obj.name.startsWith('tree')) return;
-  obj.traverse((o) => {
-    if (!o.isMesh) return;
-    if (on) {               // materials are shared between copies: give this one its own
-      o.userData.baseMaterial ??= o.material;
-      o.material = o.material.clone();
-      o.material.emissive = new THREE.Color(0.55, 0.42, 0.05);
-    } else if (o.userData.baseMaterial) {
-      o.material.dispose();
-      o.material = o.userData.baseMaterial;
-    }
-  });
-}
 function select(obj) {
-  if (selected) setHighlight(selected, false);
   selected = obj;
-  if (selected) setHighlight(selected, true);
   document.getElementById('selected').textContent = selected ? selected.name : '-';
 }
 
@@ -324,6 +316,7 @@ function teleportToIce() {
 // ------------------------------------------------------------ input
 const keys = new Set();
 addEventListener('keydown', (e) => {
+  if (e.code.startsWith('Arrow')) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'KeyB') colliderView.visible = !colliderView.visible;
   if (e.code === 'KeyF' && !e.repeat) player.throw(ball, camForward());
@@ -369,9 +362,10 @@ addEventListener('wheel', (e) => {
 function moveInput() {
   const fwd = camForward();
   const right = new THREE.Vector3(-fwd.z, 0, fwd.x);
+  const pressed = (letter, arrow) => Number(keys.has(letter) || keys.has(arrow));
   const m = new THREE.Vector3()
-    .addScaledVector(fwd, (keys.has('KeyW') ? 1 : 0) - (keys.has('KeyS') ? 1 : 0))
-    .addScaledVector(right, (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0));
+    .addScaledVector(fwd, pressed('KeyW', 'ArrowUp') - pressed('KeyS', 'ArrowDown'))
+    .addScaledVector(right, pressed('KeyD', 'ArrowRight') - pressed('KeyA', 'ArrowLeft'));
   if (m.lengthSq() > 0) walkTarget = null;              // keys override click-to-move
   else if (walkTarget) {
     m.subVectors(walkTarget, player.pos).setY(0);
@@ -395,7 +389,8 @@ function demoStep(t, dt) {
     }
     if (e.mapclick) {                                   // click the minimap where that ground point is drawn
       const r = minimap.rect(), [x, z] = e.mapclick;
-      click(r.left + (x - player.pos.x + RANGE) / (2 * RANGE) * SIZE, r.top + (z - player.pos.z + RANGE) / (2 * RANGE) * SIZE);
+      click(r.left + (x - minimap.center.x + RANGE) / (2 * RANGE) * SIZE,
+        r.top + (z - minimap.center.z + RANGE) / (2 * RANGE) * SIZE);
     }
     if (e.cam) {
       camGoal = [THREE.MathUtils.degToRad(e.cam[0]), e.cam[1], e.cam[2]];
@@ -448,8 +443,9 @@ const hudDog = document.getElementById('dogstate');
 const hudBal = document.getElementById('balance');
 function updateHud() {
   hudDog.textContent = dog.state;
+  const loadWarning = player.carry >= 3 ? ' · 선물 휘청임' : '';
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
-    + ` · 들고 있는 선물 ${player.carry}/5 · 트리 아래 ${groundGifts.size} · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
+    + ` · 들고 있는 선물 ${player.carry}/5${loadWarning} · 트리 아래 ${groundGifts.size} · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
 const clock = new THREE.Clock();
@@ -466,11 +462,11 @@ if (params.get('t')) {
   document.title = 'READY';
 } else {
   renderer.setAnimationLoop(() => {
-    const dt = Math.min(clock.getDelta(), 0.05);
-    step(dt);
+    const frameTime = clock.getDelta();
+    step(Math.min(frameTime, 0.05));
     renderFrame();
     updateHud();
-    frames++; fpsTime += dt;
+    frames++; fpsTime += frameTime;
     if (fpsTime > 0.5) { hudFps.textContent = `${Math.round(frames / fpsTime)} fps`; frames = 0; fpsTime = 0; }
   });
 }
