@@ -71,8 +71,8 @@
   </div>
 </div>
 <div id="hud">
-  선물 가까이에서 Space 또는 클릭으로 줍기, 배달할 집 앞에서 Space 또는 집 클릭으로 배달<br>
-  WASD move, Shift sprint, F throw ball, E wave<br>
+  트리 아래 선물 가까이에서 Space 또는 선물 클릭으로 줍기, 배달할 집 앞에서 Space 또는 집 클릭으로 배달<br>
+  WASD/방향키 이동, Shift 달리기, F 공 던지기, E 손 흔들기<br>
   Click: select or walk there (also on the minimap), drag: turn camera, wheel: zoom<br>
   B colliders, M mute, F12 screenshot<br>
   dog: <b id="dogstate">-</b> &nbsp; selected: <b id="selected">-</b> &nbsp; <span id="fps"></span><br>
@@ -89,6 +89,6 @@
   addEventListener('unhandledrejection', (e) => showError(e.reason?.message ?? e.reason));
   if (location.protocol === 'file:') showError('run a local server (see README) instead of opening the file directly');
 </script>
-<script type="module" src="./main.js"></script>
+<script type="module" src="./main.js?snow-cover=2"></script>
 </body>
 </html>

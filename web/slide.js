@@ -8,14 +8,14 @@
 //
 // Balance (state machine, same pattern as the Dog in actors.js):
 //
-//   STEADY --sharp turn on ice while sprinting--> WOBBLE --Shift released in time--> STEADY
+//   STEADY --sharp turn while sprinting--> WOBBLE --Shift released in time--> STEADY
 //                                                   |
 //                                                   +--window over, still sprinting--> FALLEN --> GETUP --> STEADY
 //
 //   carrying 3 gifts: constant small sway, and WOBBLE starts more easily
 //   carrying 4 or more: big sway, and every OVERLOAD_TIME the top gift falls off ('drop' event)
 
-export const GRIP = { snow: 14.0, snowStop: 10.0, ice: 0.9, iceStop: 0.23, fallen: 2.0 };   // 1/s
+export const GRIP = { snow: 2.2, snowStop: 0.9, ice: 0.9, iceStop: 0.23, fallen: 2.0 };   // 1/s
 
 export class SlideBody {
   static ICE_SPEED_FACTOR = 1.2;
@@ -51,9 +51,9 @@ export class SlideBody {
 
 export class Balance {
   // [minimum speed m/s, turn cosine limit] that starts a wobble, by how many gifts are carried
-  static TRIGGER = { light: [3.5, 0.5], heavy: [2.5, Math.SQRT1_2] };   // 60° turn, 45° turn
-  static WINDOW = { light: 0.8, heavy: 0.6 };   // s to release Shift
   static FALL_TIME = 4.0;
+  static SURFACE_TRIGGER = { snow: [4.5, -0.3], white: [3.5, 0.2], colored: [2.5, 0.7] };
+  static SURFACE_WINDOW = { snow: 1.2, white: 0.8, colored: 0.5 };
   static GETUP_TIME = 0.5;
   static OVERLOAD_TIME = 1.5;                   // s between drops when carrying 4 or more
   static SWAY = { 0: 0, 3: 0.07, 4: 0.14 };     // rad, idle sway amplitude by load
@@ -67,29 +67,37 @@ export class Balance {
     this.overload = 0;
     this.recovered = 0;       // counters for the success criteria (10 tries)
     this.fell = 0;
+    this.wobbleWindow = Balance.SURFACE_WINDOW.snow;
   }
   get locked() { return this.state === 'FALLEN' || this.state === 'GETUP'; }
   setState(s) { this.state = s; this.timer = 0; }
 
   // returns { swayZ, pitchX, events } ; events: 'wobble', 'recover', 'fall', 'drop', 'getup'
-  update(dt, { onIce, sprint, speed, turnCos, carry }) {
+  update(dt, { iceType = 'snow', sprint, speed, turnCos, carry }) {
     this.clock += dt;
     this.timer += dt;
     const events = [];
-    const load = carry >= 3 ? 'heavy' : 'light';
+    const heavy = carry >= 3;
+    const surface = Balance.SURFACE_TRIGGER[iceType] ? iceType : 'snow';
 
     switch (this.state) {
       case 'STEADY': {
-        const [minSpeed, cosLimit] = Balance.TRIGGER[load];
-        if (onIce && sprint && speed > minSpeed && turnCos !== null && turnCos < cosLimit) {
+        const [baseSpeed, baseCos] = Balance.SURFACE_TRIGGER[surface];
+        const minSpeed = baseSpeed - (heavy ? 0.5 : 0);
+        const cosLimit = Math.min(0.95, baseCos + (heavy ? 0.15 : 0));
+        if (sprint && speed > minSpeed && turnCos !== null && turnCos < cosLimit) {
+          this.wobbleWindow = Balance.SURFACE_WINDOW[surface] * (heavy ? 0.8 : 1);
           this.setState('WOBBLE');
           events.push('wobble');
         }
         break;
       }
       case 'WOBBLE':
-        if (!sprint) { this.setState('STEADY'); this.recovered++; events.push('recover'); }
-        else if (this.timer > Balance.WINDOW[load]) { this.setState('FALLEN'); this.fell++; events.push('fall'); }
+        if (!sprint) {
+          this.setState('STEADY');
+          this.recovered++;
+          events.push('recover');
+        } else if (this.timer > this.wobbleWindow) { this.setState('FALLEN'); this.fell++; events.push('fall'); }
         break;
       case 'FALLEN':
         if (this.timer > Balance.FALL_TIME) { this.setState('GETUP'); events.push('getup'); }

@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { Player, turnToward, headingOf } from './actors.js';
 import { pushOut } from './physics.js';
 import { SlideBody, Balance } from './slide.js';
-import { onIce } from './ice.js';
+import { iceSurface } from './ice.js';
 
 export const SANTA_SCALE = 1.0;
 const GIFT_SCALE = 2.0;
@@ -155,12 +155,13 @@ export class SantaPlayer extends Player {
 
   update(dt, move, sprint) {
     const pos = this.obj.position;
-    this.onIce = onIce(pos.x, pos.z);
+    const iceType = iceSurface(pos.x, pos.z);
+    this.onIce = iceType !== 'snow';
     const desired = { x: move.x, z: move.z };
 
     // 1. balance first: it decides whether the legs still obey
     const b = this.balance.update(dt, {
-      onIce: this.onIce, sprint, speed: this.body.speed, turnCos: this.body.turnCos(desired), carry: this.carry,
+      iceType, sprint, speed: this.body.speed, turnCos: this.body.turnCos(desired), carry: this.carry,
     });
     for (const e of b.events) {
       if (e === 'wobble') {
@@ -191,7 +192,7 @@ export class SantaPlayer extends Player {
 
     // 3. facing: turn toward the input (the body may still slide the other way on ice)
     const hasInput = move.lengthSq() > 1e-12;
-    if (this.balance.state === 'FALLEN' && this.onIce) {
+    if (this.balance.state === 'FALLEN') {
       const fade = Math.max(0, 1 - this.balance.timer / Balance.FALL_TIME);
       this.obj.rotation.y += this.spinDirection * this.body.speed * fade * dt;
     } else if (hasInput && !locked) {
