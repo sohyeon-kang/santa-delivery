@@ -79,7 +79,6 @@ export class Minimap {
     const s = RANGE * 0.07;          // icon size in metres (about 8 px)
     this.icons = {
       playerBack: icon(arrowShape(s * 1.35), 0x1a1a1a, 20), player: icon(arrowShape(s), 0xffd91a, 21),
-      dogBack: icon(new THREE.CircleGeometry(s * 0.75, 16), 0x1a1a1a, 20), dog: icon(new THREE.CircleGeometry(s * 0.6, 16), 0xf28c26, 21),
       ballBack: icon(new THREE.CircleGeometry(s * 0.55, 12), 0x1a1a1a, 20), ball: icon(new THREE.CircleGeometry(s * 0.4, 12), 0xe61a10, 21),
       target: icon(new THREE.RingGeometry(s * 0.45, s * 0.6, 20), 0x33ff66, 19),
     };
@@ -130,15 +129,14 @@ export class Minimap {
     if (heading !== null) m.rotation.set(-Math.PI / 2, 0, heading + Math.PI);   // shape +Y -> model +Z
   }
 
-  update({ player, dog, ball, walkTarget, mainCamera, camYaw }) {
+  update({ player, ball, walkTarget, mainCamera, camYaw }) {
     this.center.set(player.pos.x, 0, player.pos.z);
     this.camera.position.set(this.center.x, 80, this.center.z);
     this.camera.lookAt(this.center);
     const I = this.icons;
     this.place(I.playerBack, player.pos, player.obj.rotation.y);
     this.place(I.player, player.pos, player.obj.rotation.y);
-    this.place(I.dogBack, dog.pos); this.place(I.dog, dog.pos);
-    const showBall = !ball.held || dog.state === 'RETURN';
+    const showBall = !ball.held;
     I.ball.visible = I.ballBack.visible = showBall;
     this.place(I.ballBack, ball.pos); this.place(I.ball, ball.pos);
     I.target.visible = walkTarget !== null;

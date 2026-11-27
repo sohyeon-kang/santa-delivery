@@ -15,7 +15,17 @@ CC0 에셋은 출처 표기 없이 수정하고, 공개하고, 상업적으로�
 | `assets/models/nature-kit` | Nature Kit (2.1) | 329 | 나무, 바위, 꽃, 절벽, 다리, 텐트, 캠프파이어 | https://kenney.nl/assets/nature-kit |
 | `assets/models/city-kit-roads` | City Kit Roads (2.2) | 95 | 도로 타일(직선, 교차로, 횡단보도, 곡선, 다리), 가로등, 신호등, 표지판, 전봇대 | https://kenney.nl/assets/city-kit-roads |
 | `assets/models/city-kit-commercial` | City Kit Commercial (2.1) | 41 | 상가 건물, 고층 빌딩, 차양, 파라솔 | https://kenney.nl/assets/city-kit-commercial |
-| `assets/models/holiday-kit` | Holiday Kit (2.0), CC0 | 10 | 트리 5종과 선물 상자 5종. 공용 색상 텍스처와 원본 라이선스 포함 | https://kenney.nl/assets/holiday-kit |
+| `assets/models/holiday-kit` | Holiday Kit (2.0), CC0 | 36 | 트리·선물·벤치·눈사람·통나무집 부품·바위·리스·진저브레드·호두까기 인형·전구줄·눈더미·모형 철로와 기관차·눈송이·캔디를 포함함. 원본 라이선스를 보존함 | https://kenney.nl/assets/holiday-kit |
+| `assets/models/platformer-kit` | Platformer Kit, CC0 | 1 | 흰 눈 덮인 침엽수 tree-pine-snow를 사용함. 원본 라이선스를 포함함 | https://kenney.nl/assets/platformer-kit |
+| `assets/models/fantasy-town-kit` | Fantasy Town Kit (2.0), CC0 | 2 | wall-wood와 roof-gable을 조립 주택에 사용함. 원본 라이선스를 포함함 | https://kenney.nl/assets/fantasy-town-kit |
+| `assets/models/tower-defense-kit` | Tower Defense Kit (2.1), CC0 | 6 | snow-tile-straight·crossing·corner-round와 wide-straight·wide-corner·wide-transition을 포함함. 넓은 길 타일로 도로와 보도를 연결함. 원본 라이선스를 포함함 | https://kenney.nl/assets/tower-defense-kit |
+
+### 2026-11-27 마을 꾸미기에 사용한 기존 모델과 하늘
+
+- Mini Characters의 캐릭터 20종 중 플레이어 모델을 제외한 19종을 주민으로 각각 한 명씩 사용함. 기존 idle·walk 애니메이션과 원본 비율을 유지하는 균일 배율을 적용함. Cube Pets의 penguin·deer·fox·polar·bunny와 나무 위 beaver·monkey 모델에 기존 idle·walk 애니메이션을 사용함. 해당 키트의 기존 CC0 라이선스를 따름. 별도 다람쥐 모델은 제공 키트에서 확인되지 않음.
+- Car Kit의 기존 차량과 kart-oobi·kart-oodi·kart-ooli·kart-oopi·kart-oozi를 사용함. 사용자의 차량 지정에 따라 race-future 배치를 카트 시리즈로 교체함. 기존 Car Kit CC0 라이선스를 따름.
+- `assets/skyboxes/skybox-morning.png`는 사용자가 제공한 Kenney Skyboxes (1.0)의 파노라마를 사용함. 화면 밝기를 낮춰 따뜻한 저녁 분위기로 조정함. 원본 `License.txt`의 CC0를 확인하고 함께 보존함. 제작자 표기는 Kenney (www.kenney.nl)임.
+- 새 모델은 사용한 GLB와 공용 색상 텍스처만 포함함. 주택의 창문·문·보·굴뚝과 전구는 three.js 기본 geometry로 조립함. 수목·집·도로 교체는 `web/village.js`에서 적용함.
 
 - Starter Pack 키트마다 `Preview.png`(전체 미리보기)와 원본 `License.txt`가 들어 있습니다.
 - 원본 키트에는 FBX, OBJ 형식도 있습니다. 이 팩에는 GLB만 넣었습니다.
