@@ -25,9 +25,10 @@ body { background: #273e48; color: var(--ink); }
 .game-button:focus-visible, summary:focus-visible, .text-button:focus-visible { outline: 3px solid #217562; outline-offset: 4px; }
 .game-button:disabled { filter: saturate(0.25); cursor: wait; }
 .gold-button { background-image: url('../assets/ui/ui-pack/button-gold.png'); color: #553622; }
+.red-button { background-image: url('../assets/ui/ui-pack/button-red.png'); color: #4c1320; }
 #sound-toggle { position: fixed; right: 18px; bottom: 18px; z-index: 12; min-height: 44px; font-size: 14px; padding: 10px 18px 13px; }
 #start-overlay {
-  position: fixed; inset: 0; z-index: 9; display: flex; align-items: center;
+  position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
   padding: 28px 7vw; box-sizing: border-box; overflow-y: auto;
   background: linear-gradient(90deg,#102f39aa, #102f3922 85%);
 }
@@ -78,3 +79,17 @@ body.debug #hud { display: block; z-index: 4; top: 100px; max-width: calc(100vw 
   #ending-panel { animation: none; }
   .celebration-piece, .firework, .firework::before, .firework::after { animation: none; opacity: 0; }
 }
+.start-actions { display:flex; gap:12px; }
+.start-actions > button { flex:1; width:auto!important; padding-left:12px; padding-right:12px; }
+#instruction-copy { white-space:pre-line; line-height:1.9; margin:24px 0; font-size:17px; }
+#instruction-progress { display:block; margin-bottom:20px; color:#70553e; }
+#instruction-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#instruction-actions .game-button { flex:1; }
+#game-hud { display:block; width:min(510px,calc(100vw - 370px)); }
+#game-hud > strong, #game-hud > span { display:inline-block; margin:0 12px 0 0; }
+#game-hud #guide { position:static; width:auto; padding:12px 0 0; margin-top:10px; border-top:1px solid #a27b4d66; filter:none; }
+#game-hud #guide > strong { font-size:16px; }
+#game-hud #guide p { font-size:13px; margin-top:5px; }
+#game-hud #guide.urgent { color:#a51d26; }
+#delivery-notice { display:none; }
+@media(max-width:700px) { #game-hud { width:calc(100vw - 32px); } }

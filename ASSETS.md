@@ -102,7 +102,7 @@ CC0 에셋은 출처 표기 없이 수정하고, 공개하고, 상업적으로�
 | assets/sounds/music/deck-the-halls-b-kevin-macleod.mp3 | Kevin MacLeod, https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100368 | CC BY 4.0, 플레이 첫 곡 종료 후 반복함 |
 | assets/sounds/doorbell-qvantor.wav | Qvantor, https://freesound.org/people/Qvantor/sounds/879802/ | CC0, 선물 전달 시작 시 재생함 |
 | assets/sounds/shine-chime-qvantor.wav | Qvantor, https://freesound.org/people/Qvantor/sounds/879797/ | CC0, 배달 완료 시 재생함 |
-| assets/ui/ui-pack | Kenney UI Pack (2.0), 사용자 제공 원본 License.txt 확인함 | CC0, Green·Yellow 버튼 각 1개와 라이선스를 포함함 |
+| assets/ui/ui-pack | Kenney UI Pack (2.0), 사용자 제공 원본 License.txt 확인함 | CC0, Green·Yellow·Red 버튼 각 1개와 라이선스를 포함함 |
 | assets/ui/pixel-adventure | Kenney UI Pack - Pixel Adventure (2.0), 사용자 제공 원본 License.txt 확인함 | CC0, Large tiles/Thin outline/tile_0000 패널과 라이선스를 포함함 |
 
 - 추가 캐롤의 로컬 MP3 메타데이터에 Kevin MacLeod와 곡명이 포함된 것을 확인함. 제작자 공식 라이선스 페이지 https://incompetech.com/music/royalty-free/licenses/ 에서 세 곡을 선택하여 생성된 CC BY 4.0 표기를 확인함.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>산타 견습생의 첫 배달</title>
+<title>꼬마산타의 크리스마스</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #b8d6f7; font-family: system-ui, sans-serif; }
   canvas { display: block; }
@@ -48,7 +48,7 @@
   #ending small { display: block; margin-top: 16px; color: #fff; }
   #ending small a { color: #fff; }
 </style>
-<link rel="stylesheet" href="./ui.css">
+<link rel="stylesheet" href="./ui.css?v=christmas-20261128-2">
 <script type="importmap">
 {
   "imports": {
@@ -61,45 +61,42 @@
 <body>
 <div id="load-error" role="alert" hidden></div>
 <div id="audio-status" role="status" hidden></div>
-<button id="sound-toggle" class="game-button gold-button" type="button" aria-pressed="false">소리 끄기 · M</button>
+<button id="sound-toggle" class="game-button gold-button" type="button" aria-pressed="false">소리 끄기</button>
 <div id="start-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
   <section id="start-panel" class="wood-panel">
-    <h1 id="start-title">산타 견습생의<br><strong>첫 배달</strong></h1>
-    <p class="intro">트리 아래 선물을 주워<br>별이 빛나는 집 5곳에 배달하세요.</p>
-    <p class="start-tip">많이 들수록 휘청여요.<br>급회전할 때는 Shift를 떼어 버텨 보세요.</p>
-    <button id="start-game" class="game-button" type="button" disabled>마을을 불러오는 중…</button>
-    <button id="preview-music" class="text-button" type="button" disabled>시작 화면 캐롤 듣기</button>
+    <div id="intro-panel">
+      <h1 id="start-title">꼬마산타의<br><strong>크리스마스</strong></h1>
+      <p class="intro">트리 아래 선물을 챙겨<br>별이 빛나는 다섯 집에 전해 주세요.</p>
+      <p class="start-tip">미끄러운 길에서도 선물을 지킬 수 있을까요?</p>
+    </div>
+    <div id="instructions" hidden><span id="instruction-progress">1 / 3</span><h2 id="instruction-title"></h2><p id="instruction-copy"></p></div>
+    <div class="start-actions"><button id="show-instructions" class="game-button" type="button" disabled>게임 안내</button>
+    <button id="start-game" class="game-button red-button" type="button" disabled>불러오는 중…</button></div>
+    <div id="instruction-actions" hidden><button id="instruction-back" class="text-button" type="button">이전</button><button id="instruction-next" class="game-button" type="button">다음</button><button id="skip-instructions" class="text-button" type="button">건너뛰기</button></div>
     <div class="music-credits"></div>
   </section>
 </div>
 <div id="game-hud" class="wood-panel" hidden>
-  <strong>배달 <span id="delivery-count">0 / 5</span></strong>
+  <strong>전달 <span id="delivery-count">0 / 5</span></strong>
   <span>든 선물 <b id="carry-count">0 / 5</b></span>
   <span>경과 시간 <b id="elapsed-time">0분 0초</b></span>
+  <section id="guide" hidden aria-label="선물 전달 안내" aria-live="polite"><strong id="guide-title">트리 아래 선물을 주우세요</strong><p id="guide-text">가까이에서 Space 또는 클릭</p></section>
 </div>
-<section id="guide" class="wood-panel" hidden aria-label="배달 안내">
-  <strong id="guide-title">트리 아래에서 선물을 주우세요</strong>
-  <p id="guide-text">선물 가까이에서 Space 또는 선물을 클릭하세요.</p>
-  <details>
-    <summary>조작법</summary>
-    <p>WASD / 방향키 이동 · Shift 달리기<br>Space 줍기·배달 · E 손 흔들기<br>마우스 드래그 시점 · 휠 확대·축소<br>미니맵 클릭 이동 · M 소리 켜기·끄기</p>
-  </details>
-</section>
-<div id="delivery-notice" class="wood-panel" role="status" aria-live="polite" hidden>배달 완료!</div>
+<div id="delivery-notice" class="wood-panel" role="status" aria-live="polite" hidden>선물 전달 완료!</div>
 <button id="preview-ending" type="button" hidden>엔딩 미리보기 (폭죽·소리)</button>
 <div id="ending" hidden role="dialog" aria-modal="true" aria-labelledby="ending-title">
   <div id="celebration" aria-hidden="true"></div>
   <div id="ending-panel" class="wood-panel">
-    <h1 id="ending-title">첫 배달 성공!</h1>
-    <p>선물 5개를 모두 배달했어요.</p>
-    <div id="result-count">배달 <strong id="final-deliveries">5 / 5</strong></div>
+    <h1 id="ending-title">선물 전달 성공!</h1>
+    <p>선물 5개를 모두 전했어요.</p>
+    <div id="result-count">전달 <strong id="final-deliveries">5 / 5</strong></div>
     <div class="result-time">걸린 시간 <b id="final-time">-</b></div>
-    <button id="play-again" class="game-button" type="button">다시 배달하기</button>
+    <button id="play-again" class="game-button" type="button">다시 선물하러 가기</button>
     <div class="music-credits"></div>
   </div>
 </div>
 <div id="hud">
-  트리 아래 선물 가까이에서 Space 또는 선물 클릭으로 줍기, 배달할 집 앞에서 Space 또는 집 클릭으로 배달<br>
+  트리 아래 선물 가까이에서 Space 또는 선물 클릭으로 줍기, 별이 뜬 집 앞에서 Space 또는 집 클릭으로 선물 전달<br>
   WASD/방향키 이동, Shift 달리기, F 공 던지기, E 손 흔들기<br>
   Click: select or walk there (also on the minimap), drag: turn camera, wheel: zoom<br>
   B colliders, M mute, F12 screenshot<br>
@@ -132,6 +129,6 @@
   addEventListener('unhandledrejection', (e) => showError(e.reason?.message ?? e.reason));
   if (location.protocol === 'file:') showError('run a local server (see README) instead of opening the file directly');
 </script>
-<script type="module" src="./main.js?snow-cover=2"></script>
+<script type="module" src="./main.js?v=christmas-20261128-2"></script>
 </body>
 </html>
