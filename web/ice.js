@@ -11,6 +11,8 @@
 
 // c: centre [x, z] (m), h: half size [x, z] (m).
 // Positions follow docs/level_sketch_v3: roads run along x = ±24 and z = ±16, 8 m wide.
+import { PARK_ICE_PATH, PARK_WHITE_PATH, ROAD_CURVE_REPLACEMENTS, makeMeltPool, parkPathSDF } from './parkPath.js?v=20261128-4';
+
 const patches = [
   { c: [-11, -16], h: [5.8, 3.1] },
   { c: [24, -16], h: [4.2, 3.6] },
@@ -55,14 +57,24 @@ const patches = [
 ];
 const shapes = ['ellipse', 'rectangle', 'circle', 'triangle', 'long-rectangle'];
 const iceColors = ['#cff1fc', '#e6f8ff', '#85DFFF'];
-export const ICE_PATCHES = patches.map((patch, index) => ({
+export const ICE_PATCHES = [...patches.map((patch, index) => ({
   ...patch,
   shape: shapes[index % shapes.length],
   h: index % shapes.length === 4 ? [patch.h[0] * 1.3, patch.h[1] * 0.65] : patch.h,
   color: patch.color === 'white' ? '#ffffff' : iceColors[index % iceColors.length],
-}));
+})).map((patch,index) => {
+  const ribbon = ROAD_CURVE_REPLACEMENTS.find(({center}) => center[0]===patch.c[0] && center[1]===patch.c[1]);
+  if (ribbon) return ribbon.path;
+  // Independent, deterministic offsets break repeated rows and mirrored pairs.
+  // Door approaches move only slightly; street pools can stagger more widely.
+  const approach = index>=12 && index<40;
+  const dx = Math.sin(index*2.399+0.7)*(approach?0.9:1.1);
+  const dz = Math.cos(index*1.73+0.2)*(approach?1.15:1.4);
+  return makeMeltPool({...patch,c:[patch.c[0]+dx,patch.c[1]+dz]},index);
+}), PARK_ICE_PATH, PARK_WHITE_PATH];
 
 export function patchSDF(x, z, patch) {
+  if (patch.shape === 'bezier') return parkPathSDF(x,z,patch);
   const px = x - patch.c[0];
   const pz = z - patch.c[1];
   const [hx, hz] = patch.h;

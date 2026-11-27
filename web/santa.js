@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { Player, turnToward, headingOf } from './actors.js';
 import { pushOut } from './physics.js';
 import { SlideBody, Balance } from './slide.js';
-import { iceSurface } from './ice.js';
+import { iceSurface } from './ice.js?v=park-ice-20261128-4';
 
 export const SANTA_SCALE = 1.0;
 const GIFT_SCALE = 2.0;
