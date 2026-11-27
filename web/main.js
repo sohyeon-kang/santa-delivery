@@ -15,9 +15,12 @@ import { snowMaterial, snowProfile } from './snowMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
 import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js';
 import { Sound } from './sound.js';
+import { Music } from './music.js';
+import { DeliveryEffects } from './deliveryEffects.js';
 
 const MODELS = '../assets/models/';
 const params = new URLSearchParams(location.search);   // test options: cam, demo, t
+document.body.classList.toggle('debug',params.get('debug') === '1');
 const CLICK_PIXELS = 5;   // a press that moves less than this is a click, not a camera drag
 
 // ------------------------------------------------------------ renderer and scene
@@ -310,19 +313,62 @@ minimap.setDeliveryTargets(deliveryTargets.map(({ obj }, index) => ({
   position: obj.position, texture: targetMarkers[index].texture,
 })));
 const deliveredHomes = new Set();
-const startedAt = performance.now();
+const automated = params.has('t') || params.has('demo');
+let startedAt = automated ? performance.now() : null;
 let finishedTime = null;
+const elapsedSeconds = () => startedAt === null ? 0 : (performance.now()-startedAt)/1000;
 const formatTime = seconds => `${Math.floor(seconds / 60)}분 ${Math.floor(seconds % 60)}초`;
 const ending = document.getElementById('ending');
 const celebration = document.getElementById('celebration');
-const endingMusic = new Audio('../assets/sounds/music/jingle-bells-kevin-macleod.mp3');
-endingMusic.preload = 'auto';
-endingMusic.volume = 0.65;
-function playEndingMusic() {
-  endingMusic.muted = sound.muted;
-  endingMusic.currentTime = 0;
-  endingMusic.play().catch(error => console.warn('ending music:', error));
+const startOverlay = document.getElementById('start-overlay');
+const startButton = document.getElementById('start-game');
+const previewMusic = document.getElementById('preview-music');
+const gameHud = document.getElementById('game-hud');
+const guide = document.getElementById('guide');
+const guideTitle = document.getElementById('guide-title');
+const guideText = document.getElementById('guide-text');
+const deliveryCount = document.getElementById('delivery-count');
+const carryCount = document.getElementById('carry-count');
+const elapsedTime = document.getElementById('elapsed-time');
+const soundToggle = document.getElementById('sound-toggle');
+const music = new Music(() => {
+  const status = document.getElementById('audio-status');
+  status.textContent = '캐롤을 재생하지 못했습니다. 소리를 껐다가 다시 켜 보세요.';
+  status.hidden = false;
+});
+const deliveryEffects = new DeliveryEffects(scene);
+for (const container of document.querySelectorAll('.music-credits')) {
+  container.append(document.getElementById('music-credit-template').content.cloneNode(true));
 }
+startOverlay.hidden = automated;
+gameHud.hidden = guide.hidden = !automated;
+function toggleSound() {
+  sound.toggleMute();
+  music.setMuted(sound.muted);
+  soundToggle.textContent = sound.muted ? '소리 켜기 · M' : '소리 끄기 · M';
+  soundToggle.setAttribute('aria-pressed',String(sound.muted));
+  document.getElementById('audio-status').hidden = true;
+  sound.resume();
+}
+soundToggle.addEventListener('click',toggleSound);
+previewMusic.addEventListener('click',() => {
+  music.setMuted(sound.muted);
+  music.preview();
+  previewMusic.textContent = '캐롤 처음부터 듣기';
+});
+startButton.addEventListener('click',() => {
+  if (startedAt !== null) return;
+  startedAt = performance.now();
+  keys.clear();
+  startOverlay.hidden = true;
+  gameHud.hidden = guide.hidden = false;
+  sound.resume();
+  music.setMuted(sound.muted);
+  music.start();
+  if (!params.has('cam')) Object.assign(cam,{dist:9,pitch:0.35});
+  renderer.domElement.tabIndex = -1;
+  renderer.domElement.focus();
+});
 function celebrate() {
   const colors = ['#ffe17a', '#fff4c2', '#ff8f8f', '#9fe0ff', '#dcb6ff'];
   for (let i = 0; i < 5; i++) {
@@ -348,12 +394,16 @@ function celebrate() {
   }
 }
 function showEnding() {
-  finishedTime = (performance.now() - startedAt) / 1000;
+  if (finishedTime !== null) return;
+  finishedTime = elapsedSeconds();
   document.getElementById('final-time').textContent = formatTime(finishedTime);
   ending.hidden = false;
+  startOverlay.hidden = gameHud.hidden = guide.hidden = true;
   deliveryNotice.hidden = true;
   celebrate();
-  playEndingMusic();
+  music.setMuted(sound.muted);
+  music.finish();
+  document.getElementById('play-again').focus();
 }
 document.getElementById('play-again').addEventListener('click', () => location.reload());
 let pendingDelivery = null;
@@ -380,10 +430,11 @@ function deliverTo(target) {
   player.body.vel.x = player.body.vel.z = 0;
   const arm = player.tilt.getObjectByName('arm-right');
   pendingDelivery = { target, gift, start, handoff, finish, arm, armStartX: arm.rotation.x, time: 0 };
+  sound.play('doorbell');
   walkTarget = null;
   return true;
 }
-function finishDelivery({ target, gift }) {
+function finishDelivery({ target, gift, finish }) {
   scene.remove(gift);
   walkTarget = null;
   deliveredHomes.add(target);
@@ -394,7 +445,10 @@ function finishDelivery({ target, gift }) {
   minimap.setDeliveryTargets(deliveryTargets.flatMap(({ obj }, i) =>
     deliveredHomes.has(deliveryTargets[i]) ? [] : [{ position: obj.position, texture: targetMarkers[i].texture }]));
   deliveryNoticeTime = 3.0;
+  deliveryNotice.textContent = `배달 완료! ${deliveredHomes.size} / 5`;
   deliveryNotice.hidden = false;
+  deliveryEffects.burst(finish);
+  sound.play('delivery_chime');
   if (deliveredHomes.size === 5) {
     showEnding();
   }
@@ -406,7 +460,7 @@ function nearbyHome() {
 
 // pick the nearest object under the mouse; if it is the ground, walk there
 function click(mx, my) {
-  if (finishedTime !== null) return;
+  if (startedAt === null || finishedTime !== null) return;
   if (pendingDelivery) return;
   if (minimap.contains(mx, my)) {             // a click on the minimap: walk there
     walkTarget = minimap.toWorld(mx, my);
@@ -449,7 +503,7 @@ function click(mx, my) {
 }
 
 // ------------------------------------------------------------ follow camera
-const cam = { yaw: THREE.MathUtils.degToRad(data.camera?.yaw ?? 0), pitch: 0.35, dist: 9,
+const cam = { yaw: THREE.MathUtils.degToRad(data.camera?.yaw ?? 0), pitch: automated ? 0.35 : 0.6, dist: automated ? 9 : 26,
               target: player.pos.clone().add(new THREE.Vector3(0, 1.4, 0)) };
 if (params.get('cam')) {
   const [y, pt, r] = params.get('cam').split(',').map(Number);
@@ -499,13 +553,15 @@ function teleportToIce() {
 // ------------------------------------------------------------ input
 const keys = new Set();
 addEventListener('keydown', (e) => {
+  if (e.code === 'KeyM' && !e.repeat) { toggleSound(); return; }
+  if (e.target instanceof Element && e.target.closest('button,a,summary,input,textarea')) return;
+  if (startedAt === null) return;
   if (e.code.startsWith('Arrow')) e.preventDefault();
   if (finishedTime !== null) return;
   keys.add(e.code);
   if (e.code === 'KeyB') colliderView.visible = !colliderView.visible;
   if (e.code === 'KeyF' && !e.repeat) player.throw(ball, camForward());
   if (e.code === 'KeyE' && !e.repeat) player.wave();
-  if (e.code === 'KeyM' && !e.repeat) { sound.toggleMute(); endingMusic.muted = sound.muted; }
   // ---- spike test keys (remove or hide before submission)
   if (e.code === 'Space') {
     e.preventDefault();
@@ -599,7 +655,14 @@ function demoStep(t, dt) {
 let simT = 0;
 if (params.get('soundlog')) sound.log = [];
 function step(dt) {
+  deliveryEffects.update(dt);
   if (finishedTime !== null) return;
+  if (startedAt === null) {
+    village.update(performance.now()/1000,dt);
+    villagers.update(dt);
+    updateCamera(dt);
+    return;
+  }
   simT += dt;
   sound.time = simT;
   if (demo) demoStep(simT, dt);
@@ -654,18 +717,44 @@ function step(dt) {
 
 function renderFrame() {
   renderer.render(scene, camera);
-  minimap.render(renderer);                   // HUD, drawn last on top
+  if (startedAt !== null && finishedTime === null) minimap.render(renderer);
 }
 
 const hudBal = document.getElementById('balance');
+function setText(element, text) {
+  if (element.textContent !== text) element.textContent = text;
+}
 function updateHud() {
+  const elapsed = formatTime(finishedTime ?? elapsedSeconds());
+  setText(deliveryCount,`${deliveredHomes.size} / 5`);
+  setText(carryCount,`${player.carry} / 5`);
+  setText(elapsedTime,elapsed);
+  let title = deliveredHomes.size ? '다음 선물을 주우세요' : '트리 아래에서 선물을 주우세요';
+  let instruction = '선물 가까이에서 Space 또는 선물을 클릭하세요.';
+  if (pendingDelivery) {
+    title = '선물을 건네고 있어요';
+    instruction = '잠시 기다리면 배달이 완료돼요.';
+  } else if (player.carry && distanceToHome(nearbyHome()) <= 2) {
+    title = '집 앞에 도착했어요';
+    instruction = 'Space 또는 별이 있는 집을 클릭해 배달하세요.';
+  } else if (player.carry >= 3) {
+    title = '선물을 많이 들고 있어요';
+    instruction = '많이 들수록 흔들려요. 급회전할 때는 Shift를 떼어 버텨 보세요.';
+  } else if (player.carry) {
+    title = '별이 빛나는 집으로 가세요';
+    instruction = '미니맵의 별을 따라가세요. 집 앞에서 Space로 배달할 수 있어요.';
+  }
+  setText(guideTitle,title);
+  setText(guideText,instruction);
   const loadWarning = player.carry >= 3 ? ' · 선물 휘청임' : '';
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
     + ` · 들고 있는 선물 ${player.carry}/5${loadWarning} · 트리 아래 ${groundGifts.size} · 배달 ${deliveredHomes.size}/5`
-    + ` · 시간 ${formatTime(finishedTime ?? (performance.now() - startedAt) / 1000)}`
+    + ` · 시간 ${elapsed}`
     + ` · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
+startButton.disabled = previewMusic.disabled = false;
+startButton.textContent = '배달 시작';
 const clock = new THREE.Clock();
 let frames = 0, fpsTime = 0;
 updateCamera(0);

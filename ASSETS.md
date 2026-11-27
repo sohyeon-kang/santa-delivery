@@ -92,3 +92,19 @@ CC0 에셋은 출처 표기 없이 수정하고, 공개하고, 상업적으로�
 
 - Kenney에는 이 밖에도 CC0 3D 키트가 많습니다(가구, 우주, 성, 음식, 플랫포머 등). 같은 스타일이라 섞어 쓰기 좋습니다.
 - 다른 곳의 에셋을 쓸 때는 라이선스를 확인하고 보고서에 출처를 적으세요. CC-BY는 출처 표기가 필수입니다.
+
+## Should 2번 음악·효과음·UI (2026-11-27)
+
+| 파일 | 제작자·출처 | 라이선스·사용 |
+|---|---|---|
+| assets/sounds/music/silent-night-kevin-macleod.mp3 | Kevin MacLeod, https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100075 | CC BY 4.0, 시작 화면 캐롤 버튼으로 재생함 |
+| assets/sounds/music/we-wish-you-kevin-macleod.mp3 | Kevin MacLeod, https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100369 | CC BY 4.0, 게임 시작 시 재생함 |
+| assets/sounds/music/deck-the-halls-b-kevin-macleod.mp3 | Kevin MacLeod, https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100368 | CC BY 4.0, 플레이 첫 곡 종료 후 반복함 |
+| assets/sounds/doorbell-qvantor.wav | Qvantor, https://freesound.org/people/Qvantor/sounds/879802/ | CC0, 선물 전달 시작 시 재생함 |
+| assets/sounds/shine-chime-qvantor.wav | Qvantor, https://freesound.org/people/Qvantor/sounds/879797/ | CC0, 배달 완료 시 재생함 |
+| assets/ui/ui-pack | Kenney UI Pack (2.0), 사용자 제공 원본 License.txt 확인함 | CC0, Green·Yellow 버튼 각 1개와 라이선스를 포함함 |
+| assets/ui/pixel-adventure | Kenney UI Pack - Pixel Adventure (2.0), 사용자 제공 원본 License.txt 확인함 | CC0, Large tiles/Thin outline/tile_0000 패널과 라이선스를 포함함 |
+
+- 추가 캐롤의 로컬 MP3 메타데이터에 Kevin MacLeod와 곡명이 포함된 것을 확인함. 제작자 공식 라이선스 페이지 https://incompetech.com/music/royalty-free/licenses/ 에서 세 곡을 선택하여 생성된 CC BY 4.0 표기를 확인함.
+- 게임 시작창과 완료창의 음악 출처에 곡명·Kevin MacLeod (incompetech.com)·Creative Commons By Attribution 4.0 링크를 표시함. 기존 엔딩 Jingle Bells 출처도 유지함. 라이선스는 https://creativecommons.org/licenses/by/4.0/ 임.
+- 사용자 제공 원본 음원을 이름만 바꿔 복사함. 효과음은 원본 스테레오 48kHz WAV이며 위의 기존 mono 효과음 목록과 구분함.
