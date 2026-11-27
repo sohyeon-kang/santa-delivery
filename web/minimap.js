@@ -35,14 +35,14 @@ export function deliveryStarTexture(color, backdrop = true) {
   }
   ctx.closePath();
   ctx.shadowColor = color;
-  ctx.shadowBlur = 26;
+  ctx.shadowBlur = backdrop ? 26 : 8;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
   ctx.fillStyle = color;
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.lineWidth = 4;
-  ctx.strokeStyle = '#fff9e8';
+  ctx.strokeStyle = backdrop ? '#fff9e8' : '#72501f';
   ctx.stroke();
   return new THREE.CanvasTexture(canvas);
 }

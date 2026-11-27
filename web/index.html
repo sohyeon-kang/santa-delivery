@@ -48,7 +48,7 @@
   #ending small { display: block; margin-top: 16px; color: #fff; }
   #ending small a { color: #fff; }
 </style>
-<link rel="stylesheet" href="./ui.css?v=christmas-20261128-2">
+<link rel="stylesheet" href="./ui.css?v=details-20261128-4">
 <script type="importmap">
 {
   "imports": {
@@ -61,6 +61,10 @@
 <body>
 <div id="load-error" role="alert" hidden></div>
 <div id="audio-status" role="status" hidden></div>
+<div id="danger-warning" role="status" aria-live="assertive" hidden>
+  <svg class="danger-sign" viewBox="0 0 100 90" aria-hidden="true"><path d="M50 5 95 83H5Z" fill="#ffd35c" stroke="#30291f" stroke-width="6" stroke-linejoin="round"/><path d="M50 29v25" stroke="#30291f" stroke-width="9" stroke-linecap="round"/><circle cx="50" cy="68" r="5" fill="#30291f"/></svg>
+  <strong id="danger-text"></strong>
+</div>
 <button id="sound-toggle" class="game-button gold-button" type="button" aria-pressed="false">소리 끄기</button>
 <div id="start-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
   <section id="start-panel" class="wood-panel">
@@ -78,7 +82,6 @@
 </div>
 <div id="game-hud" class="wood-panel" hidden>
   <strong>전달 <span id="delivery-count">0 / 5</span></strong>
-  <span>든 선물 <b id="carry-count">0 / 5</b></span>
   <span>경과 시간 <b id="elapsed-time">0분 0초</b></span>
   <section id="guide" hidden aria-label="선물 전달 안내" aria-live="polite"><strong id="guide-title">트리 아래 선물을 주우세요</strong><p id="guide-text">가까이에서 Space 또는 클릭</p></section>
 </div>
@@ -129,6 +132,6 @@
   addEventListener('unhandledrejection', (e) => showError(e.reason?.message ?? e.reason));
   if (location.protocol === 'file:') showError('run a local server (see README) instead of opening the file directly');
 </script>
-<script type="module" src="./main.js?v=park-ice-20261128-4"></script>
+<script type="module" src="./main.js?v=details-20261128-4"></script>
 </body>
 </html>
