@@ -1,7 +1,7 @@
 # 에셋 목록과 라이선스
 
-이 팩의 에셋은 던지기 소리 두 개(아래 효과음 표 참고)를 빼면 모두 **CC0 (Creative Commons Zero, public domain)** 입니다.
-출처 표기 없이 수정하고, 공개하고, 상업적으로도 쓸 수 있습니다.
+기존 Starter Pack 에셋은 던지기 소리 두 개(아래 효과음 표 참고)를 빼면 모두 **CC0 (Creative Commons Zero, public domain)** 입니다. 추가한 엔딩 음악은 별도 출처 표기가 필요한 CC BY 4.0입니다.
+CC0 에셋은 출처 표기 없이 수정하고, 공개하고, 상업적으로도 쓸 수 있습니다. 엔딩 음악은 아래의 출처 표기를 유지해야 합니다.
 그래도 보고서와 발표 자료에 출처를 적어 주면 좋습니다.
 
 ## 3D 모델 (Kenney, kenney.nl)
@@ -36,6 +36,12 @@
 | `move_0.wav` | 클릭 이동 | Kenney Interface Sounds `toggle_001` | CC0 |
 | `bark_0..1.wav` | 강아지 짖기 | OpenGameArt "dog barking mono" by HaelDB, 0.49-0.80 s와 1.65-2.03 s 구간 (https://opengameart.org/content/dog-barking-mono) | CC0 (OGA-BY 3.0과 이중 라이선스, CC0 쪽을 따름) |
 | `throw_0..1.wav` | 공 던지기 | earshot 0.4.1 소리 은행 `swish/cane`, `swish/stick`을 코드로 렌더링 (https://github.com/Leonxlnx/earshot) | earshot 코드는 MIT. 녹음이 아니라 코드로 만든 소리 |
+
+### 추가한 엔딩 음악
+
+| 파일 | 사용 장면 | 원본·작곡가 | 라이선스 |
+|---|---|---|---|
+| `assets/sounds/music/jingle-bells-kevin-macleod.mp3` | 다섯 번째 배달 후 엔딩 | [Jingle Bells — Kevin MacLeod (incompetech.com)](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100187) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), 출처 표기 필수 |
 
 소리는 earshot(소리를 직접 들을 수 없는 AI용 분석 도구)으로 후보를 비교해 골랐습니다. 예: 짖기 구간은 "a dog barking" 일치도 z 3.4와 3.9, 던지기는 "a fast whoosh" z 5.0. 아주 짧은 소리(발소리, 클릭)는 분류 모델이 잘 구별하지 못해 Kenney 원래 분류를 따랐습니다.
 
