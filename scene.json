@@ -33,7 +33,7 @@
   "pos": [
    0,
    0,
-   6
+   5
   ],
   "rotY": 0
  },
@@ -524,10 +524,11 @@
    "model": "city-kit-roads/tile-low.glb",
    "pos": [
     0,
-    -0.08,
+    -0.32,
     0
    ],
-   "rotY": 0
+   "rotY": 0,
+   "scale": 2
   },
   {
    "model": "city-kit-roads/tile-low.glb",
@@ -650,20 +651,21 @@
    "scale": 0.5
   },
   {
-   "model": "nature-kit/statue_obelisk.glb",
+   "model": "holiday-kit/tree-decorated-snow.glb",
    "pos": [
     0,
-    0.0,
+    0,
     0
    ],
-   "rotY": 0
+   "rotY": 0,
+   "scale": 4.3
   },
   {
    "model": "city-kit-suburban/planter.glb",
    "pos": [
-    -2.6,
-    0.0,
-    -2.6
+    -7,
+    0,
+    -7
    ],
    "rotY": 0,
    "scale": 0.6
@@ -671,9 +673,9 @@
   {
    "model": "city-kit-suburban/planter.glb",
    "pos": [
-    2.6,
-    0.0,
-    -2.6
+    7,
+    0,
+    -7
    ],
    "rotY": 0,
    "scale": 0.6
@@ -681,9 +683,9 @@
   {
    "model": "city-kit-suburban/planter.glb",
    "pos": [
-    -2.6,
-    0.0,
-    2.6
+    -7,
+    0,
+    7
    ],
    "rotY": 0,
    "scale": 0.6
@@ -691,9 +693,9 @@
   {
    "model": "city-kit-suburban/planter.glb",
    "pos": [
-    2.6,
-    0.0,
-    2.6
+    7,
+    0,
+    7
    ],
    "rotY": 0,
    "scale": 0.6
@@ -2049,6 +2051,46 @@
     17.8
    ],
    "rotY": -90
+  },
+  {
+   "model": "holiday-kit/tree-snow-b.glb",
+   "pos": [
+    -5.4,
+    0,
+    -1.2
+   ],
+   "rotY": 25,
+   "scale": 2.45
+  },
+  {
+   "model": "holiday-kit/tree-snow-c.glb",
+   "pos": [
+    5.4,
+    0,
+    -1.2
+   ],
+   "rotY": 55,
+   "scale": 2.15
+  },
+  {
+   "model": "holiday-kit/tree-decorated.glb",
+   "pos": [
+    5.25,
+    0,
+    4.6
+   ],
+   "rotY": 85,
+   "scale": 2.4
+  },
+  {
+   "model": "holiday-kit/tree-snow-a.glb",
+   "pos": [
+    -5.4,
+    0,
+    4.3
+   ],
+   "rotY": 20,
+   "scale": 1.95
   }
  ]
 }

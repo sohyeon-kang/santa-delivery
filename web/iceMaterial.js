@@ -39,12 +39,13 @@ uniform vec3 uSunDir;          // L: from the surface toward the sun
 uniform vec3 uSunColor;        // colour x intensity
 uniform vec3 uAmbient;
 uniform vec3 uIceColor;
+uniform float uWhiteIce;
 uniform float uShininess;      // Blinn-Phong exponent n
 uniform float uF0;             // reflectance looking straight down (ice ~ water ~ 0.02)
 uniform float uEnvIntensity;
 uniform sampler2D uEnvMap;     // equirectangular HDR sky
 uniform vec2 uHalf;            // patch half size
-uniform float uRadius;         // corner radius
+uniform int uShape;
 uniform int uMode;
 uniform vec3 uFogColor;
 uniform float uFogDensity;
@@ -94,16 +95,24 @@ vec2 equirectUv(vec3 d) {
 }
 
 // ---------------------------------------------------------------- patch outline (SDF)
-float sdRoundBox(vec2 p, vec2 b, float r) {
-  vec2 q = abs(p) - b + r;
-  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+float sdEllipse(vec2 p, vec2 radius) {
+  return (length(p / radius) - 1.0) * min(radius.x, radius.y);
+}
+float patchDistance(vec2 p) {
+  if (uShape == 1 || uShape == 4) return max(abs(p.x) - uHalf.x, abs(p.y) - uHalf.y);
+  if (uShape == 2) return length(p) - min(uHalf.x, uHalf.y);
+  if (uShape == 3) {
+    float slope = 2.0 * uHalf.y / uHalf.x;
+    return max(-p.y - uHalf.y, (p.y - uHalf.y + slope * abs(p.x)) / length(vec2(slope, 1.0)));
+  }
+  return sdEllipse(p, uHalf);
 }
 
 void main() {
   vec2 p = vWorldPos.xz;
 
   // inside < 0 < outside; a little noise so the outline is not a perfect rectangle
-  float d = sdRoundBox(vLocal, uHalf, uRadius) + (fbm(p * 0.8) - 0.5) * 0.6;
+  float d = patchDistance(vLocal) + (fbm(p * 0.8) - 0.5) * 0.22;
   float alpha = 1.0 - smoothstep(-0.25, 0.0, d);
   if (alpha <= 0.001) discard;
   float rim = smoothstep(-0.9, -0.05, d);              // frosty white near the edge
@@ -114,7 +123,9 @@ void main() {
   vec3 H = normalize(L + V);
   float NdotL = max(dot(N, L), 0.0);
 
-  vec3 base = mix(uIceColor, vec3(0.85, 0.92, 1.0), clamp(rim * 0.8 + crack(p) * 0.3, 0.0, 1.0));
+  float fracture = crack(p);
+  vec3 base = mix(uIceColor, vec3(0.85, 0.92, 1.0), clamp(rim * 0.55 + fracture * 0.24, 0.0, 1.0));
+  base = mix(base, vec3(1.0), uWhiteIce);
   vec3 ambient = uAmbient * base;
   vec3 diffuse = base * uSunColor * NdotL;
   float spec = NdotL > 0.0 ? pow(max(dot(N, H), 0.0), uShininess) : 0.0;
@@ -135,6 +146,8 @@ void main() {
   else if (uMode == 3) color = mix(ambient + diffuse, env, F) + spec * uSunColor;
   else if (uMode == 4) color = N * 0.5 + 0.5;
   else                 color = mix(ambient + diffuse, env, F) + (spec + glint) * uSunColor;
+  float veins = fracture * uWhiteIce * 0.16;
+  color = mix(color, vec3(0.94, 0.96, 0.97) - veins + vec3(glint * 0.14), uWhiteIce * 0.92);
 
   gl_FragColor = vec4(color, alpha * mix(0.9, 1.0, F));
   #include <tonemapping_fragment>
@@ -158,14 +171,15 @@ export function makeIceMaterial(patch, { envMap, sunDir, sunColor, sunIntensity,
     uniforms: {
       uSize: { value: new THREE.Vector2(patch.h[0] * 2 + 1, patch.h[1] * 2 + 1) },
       uHalf: { value: new THREE.Vector2(patch.h[0], patch.h[1]) },
-      uRadius: { value: patch.r },
       uSunDir: { value: sunDir.clone().negate().normalize() },     // scene sunDir points away from the sun
       uSunColor: { value: sunColor.clone().multiplyScalar(sunIntensity / Math.PI) },
       uAmbient: { value: new THREE.Vector3(0.32, 0.38, 0.46) },
-      uIceColor: { value: new THREE.Color('#3f88c5') },   // darker than snow: clear ice shows the road
+      uIceColor: { value: new THREE.Color(patch.color) },
+      uWhiteIce: { value: patch.color === '#ffffff' ? 1 : 0 },
+      uShape: { value: ['ellipse', 'rectangle', 'circle', 'triangle', 'long-rectangle'].indexOf(patch.shape) },
       uShininess: { value: 256.0 },
       uF0: { value: 0.04 },        // a bit above real ice (0.02) so the sky shows
-      uEnvIntensity: { value: 1.0 },
+      uEnvIntensity: { value: patch.color === '#ffffff' ? 0.12 : 1.0 },
       uEnvMap: { value: envMap },
       uMode: { value: 0 },
       uFogColor: { value: fog ? fog.color : new THREE.Color(1, 1, 1) },

@@ -22,11 +22,12 @@
 </head>
 <body>
 <div id="hud">
-  WASD move, Shift sprint, F throw ball, E wave<br>
+  트리 아래 선물 가까이에서 Space 또는 선물 클릭으로 줍기<br>
+  WASD/방향키 이동, Shift 달리기, F 공 던지기, E 손 흔들기<br>
   Click: select or walk there (also on the minimap), drag: turn camera, wheel: zoom<br>
   B colliders, M mute, F12 screenshot<br>
   dog: <b id="dogstate">-</b> &nbsp; selected: <b id="selected">-</b> &nbsp; <span id="fps"></span><br>
-  <span style="color:#9fe0ff">spike:</span> 0-5 gifts, <span id="ice-shortcut" hidden>T go to ice, </span>I ice shader: <b id="icemode">full</b><br>
+  <span style="color:#9fe0ff">spike:</span> <span id="ice-shortcut" hidden>0-5 gifts, T go to ice, </span>I ice shader: <b id="icemode">full</b><br>
   player: <b id="balance">-</b>
 </div>
 <script>
@@ -39,6 +40,6 @@
   addEventListener('unhandledrejection', (e) => showError(e.reason?.message ?? e.reason));
   if (location.protocol === 'file:') showError('run a local server (see README) instead of opening the file directly');
 </script>
-<script type="module" src="./main.js"></script>
+<script type="module" src="./main.js?snow-cover=2"></script>
 </body>
 </html>

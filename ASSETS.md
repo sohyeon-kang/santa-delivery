@@ -15,8 +15,9 @@
 | `assets/models/nature-kit` | Nature Kit (2.1) | 329 | 나무, 바위, 꽃, 절벽, 다리, 텐트, 캠프파이어 | https://kenney.nl/assets/nature-kit |
 | `assets/models/city-kit-roads` | City Kit Roads (2.2) | 95 | 도로 타일(직선, 교차로, 횡단보도, 곡선, 다리), 가로등, 신호등, 표지판, 전봇대 | https://kenney.nl/assets/city-kit-roads |
 | `assets/models/city-kit-commercial` | City Kit Commercial (2.1) | 41 | 상가 건물, 고층 빌딩, 차양, 파라솔 | https://kenney.nl/assets/city-kit-commercial |
+| `assets/models/holiday-kit` | Holiday Kit (2.0), CC0 | 10 | 트리 5종과 선물 상자 5종. 공용 색상 텍스처와 원본 라이선스 포함 | https://kenney.nl/assets/holiday-kit |
 
-- 키트마다 `Preview.png`(전체 미리보기)와 원본 `License.txt`가 들어 있습니다.
+- Starter Pack 키트마다 `Preview.png`(전체 미리보기)와 원본 `License.txt`가 들어 있습니다.
 - 원본 키트에는 FBX, OBJ 형식도 있습니다. 이 팩에는 GLB만 넣었습니다.
 - **Nature Kit 보정:** 원본 GLB는 색 값(baseColorFactor)을 sRGB로 저장하고 metallic을 1로 두어 glTF 규격과 맞지 않습니다. 그대로 쓰면 three.js에서 금속처럼 어둡게 보입니다. 이 팩의 파일은 색 값을 linear로 바꾸고 metallic을 0으로 고친 것입니다. 각 파일의 `asset.extras.p3_fixed`에 그 기록이 있습니다.
 - **크기 단위가 키트마다 다릅니다.** 도로와 상가 키트는 타일 한 장이 1 단위라 배율 8(타일 8 m)을 씁니다. `scene.json`의 `kitScale`이 키트별 기본 배율입니다(캐릭터 키 약 1.7 m 기준).

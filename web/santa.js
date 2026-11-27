@@ -16,32 +16,32 @@ import * as THREE from 'three';
 import { Player, turnToward, headingOf } from './actors.js';
 import { pushOut } from './physics.js';
 import { SlideBody, Balance } from './slide.js';
-import { onIce } from './ice.js';
+import { iceSurface } from './ice.js';
 
-// Dimensions in metres. Scale only the visible box so stacked children keep their own size.
-const gifts = [
-  [0.48, 0.22, 0.36, '#d7263d'],
-  [0.30, 0.36, 0.28, '#1b998b'],
-  [0.40, 0.18, 0.30, '#f4b400'],
-  [0.26, 0.30, 0.24, '#3f51b5'],
-  [0.32, 0.24, 0.26, '#e8e8f0'],
-].map(([width, height, depth, color]) => ({
-  width, height, depth, material: new THREE.MeshStandardMaterial({ color, roughness: 0.6 }),
-}));
-const giftGeo = new THREE.BoxGeometry(1, 1, 1);
-const ribbonGeoA = new THREE.BoxGeometry(1.02, 1.02, 0.18);
-const ribbonGeoB = new THREE.BoxGeometry(0.18, 1.02, 1.02);
-const ribbonMat = new THREE.MeshStandardMaterial({ color: '#fff3c4', roughness: 0.4 });
+export const SANTA_SCALE = 1.0;
+const GIFT_SCALE = 2.0;
+
+// Visible models are scaled independently of the gift hierarchy.
+const giftSizes = [[0.48, 0.22, 0.36], [0.30, 0.36, 0.28],
+  [0.40, 0.18, 0.30], [0.26, 0.30, 0.24], [0.32, 0.24, 0.26]];
+let giftModels;
+export function setGiftModels(models) { giftModels = models; }
 
 export function makeGift(i) {
-  const { width, height, depth, material } = gifts[i % gifts.length];
+  const index = i % giftModels.length;
+  const model = giftModels[index].clone(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const size = bounds.getSize(new THREE.Vector3());
+  const centre = bounds.getCenter(new THREE.Vector3());
+  const [width, height, depth] = giftSizes[index].map(size => size * GIFT_SCALE);
+  const visual = new THREE.Group();
+  model.position.sub(centre);
+  visual.add(model);
+  visual.scale.set(width / size.x, height / size.y, depth / size.z);
+  model.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
   const gift = new THREE.Group();
-  const box = new THREE.Mesh(giftGeo, material);
-  box.scale.set(width, height, depth);
-  box.add(new THREE.Mesh(ribbonGeoA, ribbonMat), new THREE.Mesh(ribbonGeoB, ribbonMat));
-  box.traverse((o) => { o.castShadow = true; });
-  gift.add(box);
-  gift.userData.halfHeight = height * 1.02 / 2;   // include the ribbon
+  gift.add(visual);
+  gift.userData.halfHeight = height / 2;
   return gift;
 }
 
@@ -55,24 +55,27 @@ function makeAlert() {
   g.fillStyle = '#1a1a1a'; g.font = 'bold 76px system-ui, sans-serif'; g.textAlign = 'center'; g.fillText('!', 64, 106);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
   s.scale.setScalar(0.55);
-  s.position.y = 2.35;
+  s.position.y = 2.35 * SANTA_SCALE;
   s.renderOrder = 10;
   s.visible = false;
   return s;
 }
 
 export class GiftStack {
-  static BASE = new THREE.Vector3(0, 0.69, 0.68);   // bottom of stack, in the tilt frame (m)
-  constructor(grip) { this.grip = grip; this.boxes = []; this.made = 0; }
+  static BASE = new THREE.Vector3(0, 0.69, 0.68).multiplyScalar(SANTA_SCALE);   // bottom of stack, in the tilt frame (m)
+  constructor(grip) { this.grip = grip; this.boxes = []; }
   get count() { return this.boxes.length; }
-  add() {
-    const g = makeGift(this.made++);
+  add(g) {
+    g.position.set(0, 0, 0);
+    g.rotation.set(0, 0, 0);
     const parent = this.boxes.length ? this.boxes[this.boxes.length - 1] : this.grip;
     if (this.boxes.length) {
       g.position.y = parent.userData.halfHeight + g.userData.halfHeight;
     } else {
       g.position.copy(GiftStack.BASE);
       g.position.y += g.userData.halfHeight;
+      // Keep the back edge at the hands as the parcel grows forward.
+      g.position.z += 0.18 * (GIFT_SCALE - SANTA_SCALE);
     }
     parent.add(g);
     this.boxes.push(g);
@@ -139,7 +142,7 @@ export class SantaPlayer extends Player {
     this.alert = makeAlert();
     rig.add(this.alert);
     this.onBalance = [];      // observers: f(player, event) with event 'wobble' 'recover' 'fall' 'getup' 'drop'
-    this.onGiftBreak = [];    // observers: f(player, position)
+    this.onGiftBreak = [];    // observers: f(player, position, giftId)
   }
   get carry() { return this.gifts.count; }
 
@@ -152,12 +155,13 @@ export class SantaPlayer extends Player {
 
   update(dt, move, sprint) {
     const pos = this.obj.position;
-    this.onIce = onIce(pos.x, pos.z);
+    const iceType = iceSurface(pos.x, pos.z);
+    this.onIce = iceType !== 'snow';
     const desired = { x: move.x, z: move.z };
 
     // 1. balance first: it decides whether the legs still obey
     const b = this.balance.update(dt, {
-      onIce: this.onIce, sprint, speed: this.body.speed, turnCos: this.body.turnCos(desired), carry: this.carry,
+      iceType, sprint, speed: this.body.speed, turnCos: this.body.turnCos(desired), carry: this.carry,
     });
     for (const e of b.events) {
       if (e === 'wobble') {
@@ -173,7 +177,7 @@ export class SantaPlayer extends Player {
     const step = this.body.update(dt, desired, sprint ? Player.SPRINT : Player.WALK, this.onIce, locked);
     const bx = pos.x, bz = pos.z;
     pos.x += step.x; pos.z += step.z;
-    pushOut(pos, Player.RADIUS, this.colliders);
+    pushOut(pos, Player.RADIUS * SANTA_SCALE, this.colliders);
     const mx = pos.x - bx, mz = pos.z - bz;
     if (dt > 0 && Math.hypot(mx - step.x, mz - step.z) > 1e-6) {   // hit a wall: keep only the sliding part
       this.body.vel.x = mx / dt; this.body.vel.z = mz / dt;
@@ -188,7 +192,7 @@ export class SantaPlayer extends Player {
 
     // 3. facing: turn toward the input (the body may still slide the other way on ice)
     const hasInput = move.lengthSq() > 1e-12;
-    if (this.balance.state === 'FALLEN' && this.onIce) {
+    if (this.balance.state === 'FALLEN') {
       const fade = Math.max(0, 1 - this.balance.timer / Balance.FALL_TIME);
       this.obj.rotation.y += this.spinDirection * this.body.speed * fade * dt;
     } else if (hasInput && !locked) {
@@ -204,7 +208,7 @@ export class SantaPlayer extends Player {
     // 5. gifts in the air
     this.falling = this.falling.filter((fg) => {
       const r = fg.update(dt);
-      if (r === 'hit') for (const f of this.onGiftBreak) f(this, fg.mesh.position.clone());
+      if (r === 'hit') for (const f of this.onGiftBreak) f(this, fg.mesh.position.clone(), fg.mesh.userData.giftId);
       if (!r) this.scene.remove(fg.mesh);
       return r;
     });
