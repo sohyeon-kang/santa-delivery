@@ -12,5 +12,7 @@
   "wobble":     { "files": ["library/kenney-interface-sounds/question_001.ogg", "library/kenney-interface-sounds/question_002.ogg"], "gain": 0.5 },
   "recover":    { "files": ["library/kenney-interface-sounds/confirmation_001.ogg"], "gain": 0.45 },
   "fall":       { "files": ["library/kenney-impact-sounds/impactSoft_heavy_000.ogg", "library/kenney-impact-sounds/impactSoft_heavy_001.ogg", "library/kenney-impact-sounds/impactSoft_heavy_002.ogg", "library/kenney-impact-sounds/impactSoft_heavy_003.ogg", "library/kenney-impact-sounds/impactSoft_heavy_004.ogg"], "gain": 0.7 },
-  "gift_break": { "files": ["library/kenney-impact-sounds/impactGlass_heavy_000.ogg", "library/kenney-impact-sounds/impactGlass_heavy_001.ogg", "library/kenney-impact-sounds/impactGlass_heavy_002.ogg", "library/kenney-impact-sounds/impactGlass_heavy_003.ogg", "library/kenney-impact-sounds/impactGlass_heavy_004.ogg"], "gain": 0.6 }
+  "gift_break": { "files": ["library/kenney-impact-sounds/impactGlass_heavy_000.ogg", "library/kenney-impact-sounds/impactGlass_heavy_001.ogg", "library/kenney-impact-sounds/impactGlass_heavy_002.ogg", "library/kenney-impact-sounds/impactGlass_heavy_003.ogg", "library/kenney-impact-sounds/impactGlass_heavy_004.ogg"], "gain": 0.6 },
+  "doorbell": { "files": ["doorbell-qvantor.wav"], "gain": 0.4, "ui": true },
+  "delivery_chime": { "files": ["shine-chime-qvantor.wav"], "gain": 0.4, "ui": true }
 }

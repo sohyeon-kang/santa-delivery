@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>P3 Starter (three.js)</title>
+<title>산타 견습생의 첫 배달</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #b8d6f7; font-family: system-ui, sans-serif; }
   canvas { display: block; }
@@ -48,6 +48,7 @@
   #ending small { display: block; margin-top: 16px; color: #fff; }
   #ending small a { color: #fff; }
 </style>
+<link rel="stylesheet" href="./ui.css">
 <script type="importmap">
 {
   "imports": {
@@ -58,16 +59,43 @@
 </script>
 </head>
 <body>
-<div id="delivery-notice" hidden>배달 완료!</div>
+<div id="load-error" role="alert" hidden></div>
+<div id="audio-status" role="status" hidden></div>
+<button id="sound-toggle" class="game-button gold-button" type="button" aria-pressed="false">소리 끄기 · M</button>
+<div id="start-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
+  <section id="start-panel" class="wood-panel">
+    <h1 id="start-title">산타 견습생의<br><strong>첫 배달</strong></h1>
+    <p class="intro">트리 아래 선물을 주워<br>별이 빛나는 집 5곳에 배달하세요.</p>
+    <p class="start-tip">많이 들수록 휘청여요.<br>급회전할 때는 Shift를 떼어 버텨 보세요.</p>
+    <button id="start-game" class="game-button" type="button" disabled>마을을 불러오는 중…</button>
+    <button id="preview-music" class="text-button" type="button" disabled>시작 화면 캐롤 듣기</button>
+    <div class="music-credits"></div>
+  </section>
+</div>
+<div id="game-hud" class="wood-panel" hidden>
+  <strong>배달 <span id="delivery-count">0 / 5</span></strong>
+  <span>든 선물 <b id="carry-count">0 / 5</b></span>
+  <span>경과 시간 <b id="elapsed-time">0분 0초</b></span>
+</div>
+<section id="guide" class="wood-panel" hidden aria-label="배달 안내">
+  <strong id="guide-title">트리 아래에서 선물을 주우세요</strong>
+  <p id="guide-text">선물 가까이에서 Space 또는 선물을 클릭하세요.</p>
+  <details>
+    <summary>조작법</summary>
+    <p>WASD / 방향키 이동 · Shift 달리기<br>Space 줍기·배달 · E 손 흔들기<br>마우스 드래그 시점 · 휠 확대·축소<br>미니맵 클릭 이동 · M 소리 켜기·끄기</p>
+  </details>
+</section>
+<div id="delivery-notice" class="wood-panel" role="status" aria-live="polite" hidden>배달 완료!</div>
 <button id="preview-ending" type="button" hidden>엔딩 미리보기 (폭죽·소리)</button>
 <div id="ending" hidden role="dialog" aria-modal="true" aria-labelledby="ending-title">
   <div id="celebration" aria-hidden="true"></div>
-  <div id="ending-panel">
-    <h1 id="ending-title">★ 선물 배달 완료! ★</h1>
-    <div>선물 5개를 모두 배달했어요.</div>
-    <div>걸린 시간 <b id="final-time">-</b></div>
-    <button id="play-again" type="button">다시 시작</button>
-    <small>음악: <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100187" target="_blank" rel="noopener">Jingle Bells — Kevin MacLeod</a> · CC BY 4.0</small>
+  <div id="ending-panel" class="wood-panel">
+    <h1 id="ending-title">첫 배달 성공!</h1>
+    <p>선물 5개를 모두 배달했어요.</p>
+    <div id="result-count">배달 <strong id="final-deliveries">5 / 5</strong></div>
+    <div class="result-time">걸린 시간 <b id="final-time">-</b></div>
+    <button id="play-again" class="game-button" type="button">다시 배달하기</button>
+    <div class="music-credits"></div>
   </div>
 </div>
 <div id="hud">
@@ -79,11 +107,26 @@
   <span style="color:#9fe0ff">spike:</span> <span id="ice-shortcut" hidden>확인 모드: P키로 엔딩·폭죽·음악 바로 보기, 0-5 선물, T 빙판 이동 · </span>I ice shader: <b id="icemode">full</b><br>
   player: <b id="balance">-</b>
 </div>
+<template id="music-credit-template">
+  <details class="credits">
+    <summary>음악과 에셋 출처</summary>
+    <p><a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100075" target="_blank" rel="noopener">Silent Night</a>,
+      <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100369" target="_blank" rel="noopener">We Wish you a Merry Christmas</a>,
+      <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100368" target="_blank" rel="noopener">Deck the Halls B</a>,
+      <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100187" target="_blank" rel="noopener">Jingle Bells</a><br>
+      Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">By Attribution 4.0</a></p>
+    <p><a href="https://freesound.org/people/Qvantor/sounds/879802/" target="_blank" rel="noopener">Doorbell Ding Dong</a> ·
+      <a href="https://freesound.org/people/Qvantor/sounds/879797/" target="_blank" rel="noopener">Shine Chime</a> — Qvantor · CC0<br>
+      UI Pack · Pixel Adventure — Kenney · CC0</p>
+  </details>
+</template>
 <script>
   // show loading errors on screen (for example when the page was opened as file://)
   const showError = (msg) => {
-    const hud = document.getElementById('hud');
-    hud.innerHTML += `<br><b style="color:#ff8a80">Error:</b> ${msg}`;
+    const panel = document.getElementById('load-error');
+    panel.hidden = false;
+    panel.textContent = `게임을 불러오지 못했습니다. ${msg}`;
   };
   addEventListener('error', (e) => showError(e.message));
   addEventListener('unhandledrejection', (e) => showError(e.reason?.message ?? e.reason));
