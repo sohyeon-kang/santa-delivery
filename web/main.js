@@ -298,6 +298,52 @@ minimap.setDeliveryTargets(deliveryTargets.map(({ obj }, index) => ({
   position: obj.position, texture: targetMarkers[index].texture,
 })));
 const deliveredHomes = new Set();
+const startedAt = performance.now();
+let finishedTime = null;
+const formatTime = seconds => `${Math.floor(seconds / 60)}분 ${Math.floor(seconds % 60)}초`;
+const ending = document.getElementById('ending');
+const celebration = document.getElementById('celebration');
+const endingMusic = new Audio('../assets/sounds/music/jingle-bells-kevin-macleod.mp3');
+endingMusic.preload = 'auto';
+endingMusic.volume = 0.65;
+function playEndingMusic() {
+  endingMusic.muted = sound.muted;
+  endingMusic.currentTime = 0;
+  endingMusic.play().catch(error => console.warn('ending music:', error));
+}
+function celebrate() {
+  const colors = ['#ffe17a', '#fff4c2', '#ff8f8f', '#9fe0ff', '#dcb6ff'];
+  for (let i = 0; i < 5; i++) {
+    const firework = document.createElement('span');
+    firework.className = 'firework';
+    firework.style.setProperty('--x', `${14 + i * 18}%`);
+    firework.style.setProperty('--y', `${21 + (i % 2) * 24}%`);
+    firework.style.setProperty('--color', colors[i]);
+    firework.style.setProperty('--delay', `${i * 0.42}s`);
+    celebration.append(firework);
+  }
+  for (let i = 0; i < 44; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'celebration-piece';
+    piece.textContent = i % 4 === 0 ? '★' : '■';
+    piece.style.setProperty('--x', `${Math.random() * 100}%`);
+    piece.style.setProperty('--color', colors[i % colors.length]);
+    piece.style.setProperty('--size', `${10 + Math.random() * 16}px`);
+    piece.style.setProperty('--duration', `${2.4 + Math.random() * 1.6}s`);
+    piece.style.setProperty('--delay', `${Math.random() * 0.8}s`);
+    piece.style.setProperty('--drift', `${Math.random() * 140 - 70}px`);
+    celebration.append(piece);
+  }
+}
+function showEnding() {
+  finishedTime = (performance.now() - startedAt) / 1000;
+  document.getElementById('final-time').textContent = formatTime(finishedTime);
+  ending.hidden = false;
+  deliveryNotice.hidden = true;
+  celebrate();
+  playEndingMusic();
+}
+document.getElementById('play-again').addEventListener('click', () => location.reload());
 let pendingDelivery = null;
 let deliveryNoticeTime = 0;
 const deliveryNotice = document.getElementById('delivery-notice');
@@ -337,6 +383,9 @@ function finishDelivery({ target, gift }) {
     deliveredHomes.has(deliveryTargets[i]) ? [] : [{ position: obj.position, texture: targetMarkers[i].texture }]));
   deliveryNoticeTime = 3.0;
   deliveryNotice.hidden = false;
+  if (deliveredHomes.size === 5) {
+    showEnding();
+  }
 }
 function nearbyHome() {
   return deliveryTargets.filter(target => !deliveredHomes.has(target))
@@ -345,6 +394,7 @@ function nearbyHome() {
 
 // pick the nearest object under the mouse; if it is the ground, walk there
 function click(mx, my) {
+  if (finishedTime !== null) return;
   if (pendingDelivery) return;
   if (minimap.contains(mx, my)) {             // a click on the minimap: walk there
     walkTarget = minimap.toWorld(mx, my);
@@ -419,6 +469,12 @@ function setCarry(n) {
 let iceIndex = 0;
 const debugIceShortcut = new URLSearchParams(location.search).get('debug') === '1';
 document.getElementById('ice-shortcut').hidden = !debugIceShortcut;
+const previewEnding = document.getElementById('preview-ending');
+previewEnding.hidden = !debugIceShortcut;
+previewEnding.addEventListener('click', () => {
+  sound.resume();
+  showEnding();
+});
 
 function teleportToIce() {
   const pt = ICE_PATCHES[iceIndex++ % ICE_PATCHES.length];
@@ -431,11 +487,12 @@ function teleportToIce() {
 // ------------------------------------------------------------ input
 const keys = new Set();
 addEventListener('keydown', (e) => {
+  if (finishedTime !== null) return;
   keys.add(e.code);
   if (e.code === 'KeyB') colliderView.visible = !colliderView.visible;
   if (e.code === 'KeyF' && !e.repeat) player.throw(ball, camForward());
   if (e.code === 'KeyE' && !e.repeat) player.wave();
-  if (e.code === 'KeyM' && !e.repeat) sound.toggleMute();
+  if (e.code === 'KeyM' && !e.repeat) { sound.toggleMute(); endingMusic.muted = sound.muted; }
   // ---- spike test keys (remove or hide before submission)
   if (e.code === 'Space') {
     e.preventDefault();
@@ -446,6 +503,7 @@ addEventListener('keydown', (e) => {
     }
   }
   if (debugIceShortcut && /^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
+  if (debugIceShortcut && e.code === 'KeyP' && !e.repeat) showEnding(); // preview the real ending without five deliveries
   if (e.code === 'KeyI' && !e.repeat) document.getElementById('icemode').textContent = ice.cycle();   // ice shader terms
   if (debugIceShortcut && e.code === 'KeyT' && !e.repeat) teleportToIce();                                // jump next to an ice patch
   if (e.code === 'F12') {
@@ -526,6 +584,7 @@ function demoStep(t, dt) {
 let simT = 0;
 if (params.get('soundlog')) sound.log = [];
 function step(dt) {
+  if (finishedTime !== null) return;
   simT += dt;
   sound.time = simT;
   if (demo) demoStep(simT, dt);
@@ -587,7 +646,9 @@ const hudBal = document.getElementById('balance');
 function updateHud() {
   hudDog.textContent = dog.state;
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
-    + ` · 들고 있는 선물 ${player.carry}/5 · 트리 아래 ${groundGifts.size} · 배달 ${deliveredHomes.size}/5 · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
+    + ` · 들고 있는 선물 ${player.carry}/5 · 트리 아래 ${groundGifts.size} · 배달 ${deliveredHomes.size}/5`
+    + ` · 시간 ${formatTime(finishedTime ?? (performance.now() - startedAt) / 1000)}`
+    + ` · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
 const clock = new THREE.Clock();
