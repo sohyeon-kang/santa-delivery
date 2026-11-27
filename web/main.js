@@ -1,11 +1,13 @@
-// P3 Starter (three.js): walk around a Kenney town with a dog that greets you and plays fetch.
+// Santa apprentice: gifts, slippery winter streets and Christmas village scenery.
 // Run a local server in the P3-Starter-Pack folder:  python -m http.server 8000
 // then open http://localhost:8000/web/
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { Animator, Dog, Player, headingOf, turnToward } from './actors.js';
+import { Animator, Player, headingOf, turnToward } from './actors.js';
+import { winterVillage, buildWinterHouse, decorateVillage, winterRoadMaterial, GIFT_TREE_POSITIONS } from './village.js';
+import { createVillagers } from './villagers.js';
 import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js';
 import { ICE_PATCHES, onIce } from './ice.js';
 import { buildIce } from './iceMaterial.js';
@@ -36,20 +38,24 @@ addEventListener('resize', () => {
 });
 
 const data = await (await fetch('../' + (params.get('scene') ?? 'scene.json'))).json();   // ?scene=other.json
-const sky = new THREE.Color('#91a9ca');
-scene.background = sky;
-scene.fog = new THREE.FogExp2(sky, 0.012);
+const sky = new THREE.Color('#7d88a4');
+const skyTexture = await new THREE.TextureLoader().loadAsync('../assets/skyboxes/skybox-morning.png');
+skyTexture.colorSpace = THREE.SRGBColorSpace;
+skyTexture.mapping = THREE.EquirectangularReflectionMapping;
+scene.background = skyTexture;
+scene.backgroundIntensity = 0.3;
+scene.fog = new THREE.FogExp2(sky, 0.006);
 
 // image-based ambient light from an HDRI (Poly Haven, CC0)
 const hdr = await new RGBELoader().loadAsync('../assets/hdri/kloofendal_48d_partly_cloudy_puresky_1k.hdr');
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromEquirectangular(hdr).texture;
-scene.environmentIntensity = 0.57;
+scene.environmentIntensity = 0.35;
 // keep the equirectangular HDR: the ice shader reads it as its environment map
 
 // sun with a shadow camera that follows the player
 const sunDir = new THREE.Vector3(...data.sun.direction).normalize();
-const sun = new THREE.DirectionalLight(new THREE.Color(...data.sun.color), data.sun.intensity * 0.86);
+const sun = new THREE.DirectionalLight('#ffceaa', 0.75);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 140 });
@@ -73,6 +79,11 @@ function loadGLB(rel) {
 }
 
 async function place(desc, winter = false) {
+  if (desc.winterHouse) {
+    const house = await buildWinterHouse(desc, place);
+    scene.add(house.obj);
+    return house;
+  }
   const gltf = await loadGLB(desc.model);
   const kit = desc.model.split('/')[0];
   // SkeletonUtils.clone also copies bones, so skinned characters can be instanced
@@ -84,11 +95,29 @@ async function place(desc, winter = false) {
       o.castShadow = o.receiveShadow = true;
       const prepare = (material) => {
         if (material.map) material.map.magFilter = THREE.NearestFilter;
-        return snowMaterial(material, profile);
+        return kit === 'tower-defense-kit' ? winterRoadMaterial(material) : snowMaterial(material, profile);
       };
       o.material = Array.isArray(o.material) ? o.material.map(prepare) : prepare(o.material);
     }
   });
+  if (desc.size || desc.height) {
+    const bounds = new THREE.Box3().setFromObject(obj);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const wrapper = new THREE.Group();
+    wrapper.add(obj);
+    obj.position.sub(new THREE.Vector3(center.x,bounds.min.y,center.z));
+    if (desc.height) wrapper.scale.setScalar(desc.height / size.y);
+    else wrapper.scale.set(desc.size[0]/size.x,desc.size[1]/size.y,desc.size[2]/size.z);
+    const placed = new THREE.Group();
+    placed.name = obj.name;
+    placed.add(wrapper);
+    placed.position.set(...(desc.pos ?? [0,0,0]));
+    placed.rotation.y = THREE.MathUtils.degToRad(desc.rotY ?? 0);
+    placed.userData.ambient = !!desc.ambient;
+    scene.add(placed);
+    return { obj: placed, clips: gltf.animations };
+  }
   obj.position.set(...(desc.pos ?? [0, 0, 0]));
   obj.rotation.y = THREE.MathUtils.degToRad(desc.rotY ?? 0);
   obj.scale.setScalar((desc.scale ?? 1) * (data.kitScale[kit] ?? 1));
@@ -101,12 +130,14 @@ const giftFiles = ['present-a-cube', 'present-b-cube', 'present-a-rectangle',
 setGiftModels(await Promise.all(giftFiles.map(async name =>
   (await loadGLB('holiday-kit/' + name + '.glb')).scene)));
 
-const props = await Promise.all(data.props
+const props = await Promise.all(winterVillage(data)
   .filter(({ model }) => !/^nature-kit\/(grass_|flower_)/.test(model))
   .map((desc) => place(desc, true)));
 // world-space AABBs (rest pose): picking, and ground-plane colliders (see physics.js)
 for (const p of props) { p.obj.updateMatrixWorld(true); p.box = new THREE.Box3().setFromObject(p.obj); }
-const colliders = props.map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
+const colliders = props.filter(p => !p.obj.userData.ambient).map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
+const village = await decorateVillage(scene, props, place);
+const villagers = createVillagers(props, colliders);
 
 // player = rig (position, heading) > tilt (lean around the feet) > model   (see santa.js)
 const p = await place(data.player);
@@ -120,19 +151,12 @@ tilt.add(p.obj);
 rig.add(tilt);
 scene.add(rig);
 const player = new SantaPlayer(rig, tilt, new Animator(p.obj, withCarryClips(p.clips)), colliders, scene);
-const d = await place(data.dog);
-const dog = new Dog(d.obj, new Animator(d.obj, d.clips), data.dog.home ?? data.dog.pos,
-  data.dog.wanderRadius ?? 4, colliders);
 
 const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(Ball.RADIUS, 24, 16),
   new THREE.MeshStandardMaterial({ color: '#e0261a', roughness: 0.5 }));
 ballMesh.castShadow = true;
 scene.add(ballMesh);
 const ball = new Ball(ballMesh);
-
-// observers: the player waves back when greeted, the dog chases a thrown ball
-dog.onGreet.push((dg) => player.wave(dg.pos));
-player.onThrow.push((pl) => dog.ballThrown(ball, pl.pos));
 
 // sound effects are observers too: they react to the same events
 const sound = new Sound(scene);
@@ -147,7 +171,6 @@ const up = (q, h) => q.clone().add(new THREE.Vector3(0, h, 0));
 player.onStep.push((pl) => sound.play('step_' + surface(pl.pos), pl.pos.clone()));
 player.onThrow.push((pl) => sound.play('throw', up(pl.pos, 1.2)));
 ball.onHit.push((b, kind, v) => sound.play(kind === 'ground' ? 'bounce' : 'wall', b.pos.clone(), Math.min(1, v / 5)));
-dog.onBark.push((dg) => sound.play('bark', up(dg.pos, 0.5)));
 
 // ice patches with the hand-written shader (iceMaterial.js)
 const ice = buildIce(scene, ICE_PATCHES, hardGround, {
@@ -161,13 +184,10 @@ player.onBalance.push((pl, e) => {
   if (e === 'fall') sound.play('fall', pl.pos.clone());
 });
 // Clear pickup spots beside the five park trees (world x/z).
-const giftSpots = [
-  [[-0.95, 3.3], [0, 3.5], [0.95, 3.3]],
-  [[-6.2, 0.8], [-5.3, 1], [-4.4, 0.8]],
-  [[4.5, 0.6], [5.4, 0.8], [6.3, 0.6]],
-  [[4.3, 6.5], [5.2, 6.7], [6.1, 6.5]],
-  [[-6.2, 6], [-5.3, 6.2], [-4.4, 6]],
-];
+const giftSpots = GIFT_TREE_POSITIONS.map(([x,z], index) => {
+  const distance = index === 0 ? 3.3 : 2;
+  return [[x-0.9,z+distance],[x,z+distance+0.2],[x+0.9,z+distance]];
+});
 const lastTree = new Map();
 const groundGifts = new Map();
 const pickupRadius = 1.8;
@@ -396,7 +416,7 @@ function click(mx, my) {
   }
   const ray = mouseRay(mx, my, innerWidth, innerHeight, camera);
   let best = null, bestT = Infinity;
-  const pickable = [...props, ...groundGifts.values(), { obj: d.obj, box: new THREE.Box3().setFromObject(d.obj) }];
+  const pickable = [...props, ...groundGifts.values()];
   for (const it of pickable) {
     const t = rayAABB(ray, it.box);
     if (t !== null && t < bestT) { best = it.obj; bestT = t; }
@@ -618,7 +638,8 @@ function step(dt) {
     stuck = moved < 0.3 * Player.WALK * dt ? stuck + dt : 0;
     if (stuck > 0.6) walkTarget = null;
   }
-  dog.update(dt, player.pos);
+  village.update(simT, dt);
+  villagers.update(dt);
   ball.update(dt, colliders);
   marker.visible = walkTarget !== null;
   if (walkTarget) marker.position.copy(walkTarget).setY(0.02);
@@ -628,7 +649,7 @@ function step(dt) {
   updateCamera(dt);
   // third-person games put the ears on the character and turn them with the camera
   sound.setListener(up(player.pos, 1.4), camera.quaternion);
-  minimap.update({ player, dog, ball, walkTarget, mainCamera: camera, camYaw: cam.yaw });
+  minimap.update({ player, ball, walkTarget, mainCamera: camera, camYaw: cam.yaw });
 }
 
 function renderFrame() {
@@ -636,10 +657,8 @@ function renderFrame() {
   minimap.render(renderer);                   // HUD, drawn last on top
 }
 
-const hudDog = document.getElementById('dogstate');
 const hudBal = document.getElementById('balance');
 function updateHud() {
-  hudDog.textContent = dog.state;
   const loadWarning = player.carry >= 3 ? ' · 선물 휘청임' : '';
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
     + ` · 들고 있는 선물 ${player.carry}/5${loadWarning} · 트리 아래 ${groundGifts.size} · 배달 ${deliveredHomes.size}/5`
