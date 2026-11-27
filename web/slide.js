@@ -51,10 +51,10 @@ export class SlideBody {
 
 export class Balance {
   // [minimum speed m/s, turn cosine limit] that starts a wobble, by how many gifts are carried
-  static FALL_TIME = 4.0;
+  static FALL_TIME = 1.0;
   static SURFACE_TRIGGER = { snow: [4.5, -0.3], white: [3.5, 0.2], colored: [2.5, 0.7] };
   static SURFACE_WINDOW = { snow: 1.2, white: 0.8, colored: 0.5 };
-  static GETUP_TIME = 0.5;
+  static GETUP_TIME = 0.4;
   static OVERLOAD_TIME = 1.5;                   // s between drops when carrying 4 or more
   static SWAY = { 0: 0, 3: 0.07, 4: 0.14 };     // rad, idle sway amplitude by load
   static WOBBLE_SWAY = 0.35;                    // rad

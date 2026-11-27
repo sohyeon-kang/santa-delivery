@@ -108,3 +108,9 @@ CC0 에셋은 출처 표기 없이 수정하고, 공개하고, 상업적으로�
 - 추가 캐롤의 로컬 MP3 메타데이터에 Kevin MacLeod와 곡명이 포함된 것을 확인함. 제작자 공식 라이선스 페이지 https://incompetech.com/music/royalty-free/licenses/ 에서 세 곡을 선택하여 생성된 CC BY 4.0 표기를 확인함.
 - 게임 시작창과 완료창의 음악 출처에 곡명·Kevin MacLeod (incompetech.com)·Creative Commons By Attribution 4.0 링크를 표시함. 기존 엔딩 Jingle Bells 출처도 유지함. 라이선스는 https://creativecommons.org/licenses/by/4.0/ 임.
 - 사용자 제공 원본 음원을 이름만 바꿔 복사함. 효과음은 원본 스테레오 48kHz WAV이며 위의 기존 mono 효과음 목록과 구분함.
+
+### 2026-11-28 크리스마스 세부 표현 수정
+
+- 플레이어는 기존 Kenney Mini Characters의 character-female-b.glb(CC0)를 사용함. 실행 중 플레이어 전용 텍스처 사본의 의상 색을 빨강으로 변경함. 원본 모델·텍스처와 주민 외형은 수정하지 않음.
+- 산타 모자와 흰 코트 장식은 santaAppearance.js에서 직접 구성한 메시·흰 테두리·방울·밑단·앞섶·단추이며 추가 외부 에셋을 사용하지 않음.
+- 기존 Kevin MacLeod 음악 4곡의 출처·CC BY 4.0 표기를 유지함. 재생 시 앞뒤 무음 구간을 제외하고 곡 사이 0.035초를 겹쳐 연결함. 원본 MP3 파일은 변경하지 않음.

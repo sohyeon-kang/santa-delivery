@@ -6,17 +6,18 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { Animator, Player, headingOf, turnToward } from './actors.js';
-import { winterVillage, buildWinterHouse, decorateVillage, winterRoadMaterial, GIFT_TREE_POSITIONS } from './village.js';
+import { winterVillage, buildWinterHouse, clearHouseEdges, decorateVillage, winterRoadMaterial, GIFT_TREE_POSITIONS } from './village.js?v=details-20261128-4';
 import { createVillagers } from './villagers.js';
-import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js?v=park-ice-20261128-4';
+import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js?v=details-20261128-4';
 import { ICE_PATCHES, onIce } from './ice.js?v=park-ice-20261128-4';
 import { buildIce } from './iceMaterial.js?v=park-ice-20261128-4';
 import { snowMaterial, snowProfile } from './snowMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
-import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js?v=park-ice-20261128-4';
+import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js?v=details-20261128-4';
 import { Sound } from './sound.js';
-import { Music } from './music.js?v=intro-20261128-2';
+import { Music } from './music.js?v=details-20261128-4';
 import { DeliveryEffects } from './deliveryEffects.js';
+import { dressSanta } from './santaAppearance.js?v=details-20261128-4';
 
 const MODELS = '../assets/models/';
 const params = new URLSearchParams(location.search);   // test options: cam, demo, t
@@ -147,6 +148,7 @@ const props = await Promise.all(winterVillage(data)
   .map((desc) => place(desc, true)));
 // world-space AABBs (rest pose): picking, and ground-plane colliders (see physics.js)
 for (const p of props) { p.obj.updateMatrixWorld(true); p.box = new THREE.Box3().setFromObject(p.obj); }
+clearHouseEdges(props);
 const colliders = props.filter(p => !p.obj.userData.ambient).map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
 const village = await decorateVillage(scene, props, place);
 const villagers = createVillagers(props, colliders);
@@ -162,6 +164,7 @@ p.obj.rotation.set(0, 0, 0);
 tilt.add(p.obj);
 rig.add(tilt);
 scene.add(rig);
+dressSanta(p.obj);
 const player = new SantaPlayer(rig, tilt, new Animator(p.obj, withCarryClips(p.clips)), colliders, scene);
 
 const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(Ball.RADIUS, 24, 16),
@@ -307,10 +310,11 @@ const targetMarkers = deliveryTargets.map(({ obj, box }, index) => {
   const texture = deliveryStarTexture(targetColors[index]);
   const worldTexture = deliveryStarTexture('#ffe25d', false);
   const star = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: worldTexture, depthTest: false, depthWrite: false, transparent: true,
+    map: worldTexture, depthTest: true, depthWrite: false, transparent: true, toneMapped:false, fog:false,
   }));
-  star.position.set(obj.position.x, box.max.y + 1.5, obj.position.z);
-  star.scale.set(3.2, 3.2, 1);
+  star.position.set(obj.position.x, box.max.y + 2.3, obj.position.z);
+  star.scale.set(2.5, 2.5, 1);
+  star.name='delivery-world-star';
   scene.add(star);
   const groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), glowGroundMaterial);
   groundGlow.rotation.x = -Math.PI / 2;
@@ -341,7 +345,6 @@ const guide = document.getElementById('guide');
 const guideTitle = document.getElementById('guide-title');
 const guideText = document.getElementById('guide-text');
 const deliveryCount = document.getElementById('delivery-count');
-const carryCount = document.getElementById('carry-count');
 const elapsedTime = document.getElementById('elapsed-time');
 const soundToggle = document.getElementById('sound-toggle');
 const music = new Music(() => {
@@ -780,7 +783,6 @@ function setText(element, text) {
 function updateHud() {
   const elapsed = formatTime(finishedTime ?? elapsedSeconds());
   setText(deliveryCount,`${deliveredHomes.size} / 5`);
-  setText(carryCount,`${player.carry} / 5`);
   setText(elapsedTime,elapsed);
   if (startedAt !== null && finishedTime === null) {
     if (player.onIce) notify('빙판이에요! 더 미끄러워요','속도를 줄이고 미리 방향을 바꾸세요',4,5,'ice');
@@ -801,8 +803,10 @@ function updateHud() {
     instruction = activeHint.text;
   }
   const wobbling = player.balance.state === 'WOBBLE';
-  if (wobbling) { title = '휘청! Shift를 떼세요'; instruction = ''; }
-  guide.classList.toggle('urgent',wobbling);
+  const danger=document.getElementById('danger-warning');
+  const warning=wobbling?'휘청! Shift를 떼세요':player.carry>=4&&!player.balance.locked?'선물이 떨어져요!':'';
+  danger.hidden=!warning||startedAt===null||finishedTime!==null;
+  setText(document.getElementById('danger-text'),warning);
   guideText.hidden = !instruction;
   setText(guideTitle,title);
   setText(guideText,instruction);

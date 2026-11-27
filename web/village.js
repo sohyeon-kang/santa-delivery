@@ -9,14 +9,16 @@ export function winterRoadMaterial(base) {
   const material = base.clone();
   material.roughness = 1;
   material.metalness = 0;
-  material.customProgramCacheKey = () => 'winter-road-color';
+  material.customProgramCacheKey = () => 'winter-road-color-white-2';
   material.onBeforeCompile = shader => {
+    shader.uniforms.uWinterRoadTint={value:new THREE.Color('#f1f6fd')};
+    shader.fragmentShader='uniform vec3 uWinterRoadTint;\n'+shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
       #include <color_fragment>
       // Recolor the atlas's blue path, keeping white banks and stone details.
-      // Matte lavender snow paths stay distinct from cyan reflective ice.
+      // Pale blue-white snow stays matte; ice retains its blue reflective material.
       float pathColor = smoothstep(0.015, 0.08, diffuseColor.b - diffuseColor.r);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.49, 0.48, 0.56), pathColor);
+      diffuseColor.rgb = mix(diffuseColor.rgb, uWinterRoadTint, pathColor);
     `);
   };
   roadMaterials.set(base, material);
@@ -68,7 +70,11 @@ export function winterVillage(data) {
     if (name.startsWith('building-type-')) {
       const index = house++;
       const fantasy = (index % 4 === 0 || index % 4 === 3) && index % 3 === 0;
-      return { ...desc, winterHouse: fantasy ? 'fantasy' : 'cabin', scale: 1 };
+      const pos=[...desc.pos];
+      pos[0]+=Math.sin(index*2.17+0.4)*1.5;
+      pos[2]+=Math.cos(index*1.71+0.8)*1.6;
+      return { ...desc, pos,rotY:(desc.rotY??0)+Math.sin(index*1.83+0.3)*14,
+        winterHouse: fantasy ? 'fantasy' : 'cabin', scale: 1 };
     }
     if (desc.model.startsWith('car-kit/')) {
       car++;
@@ -81,9 +87,11 @@ export function winterVillage(data) {
   for (const home of props.filter(p => p.model.includes('building-type-'))) {
     const [x,,z] = home.pos;
     const side = Math.sign(z);
+    const yaw=THREE.MathUtils.degToRad(home.rotY??0);
+    const doorX=x+Math.sin(yaw)*2.9,doorZ=z+Math.cos(yaw)*2.9;
     // A broad entry followed by two rounded bends brings the path to the door.
     [[x+side*3,side*19,'wide-transition',0],[x+side*3,side*22,'wide-corner',side<0?90:270],
-      [x,side*22,'wide-corner',side<0?270:90]].forEach(([px,pz,tile,rotation]) => {
+      [doorX,doorZ-side*1.2,'wide-corner',side<0?270:90]].forEach(([px,pz,tile,rotation]) => {
       add(`tower-defense-kit/snow-tile-${tile}.glb`,[px,-0.025,pz],[3.04,0.09,3.04],rotation);
     });
   }
@@ -249,6 +257,30 @@ export async function buildWinterHouse(desc, place) {
   return { obj: group, clips: [] };
 }
 
+// House variation is intentional; nearby parked props must leave its footprint clear.
+export function clearHouseEdges(props) {
+  const homes=props.filter(p=>p.obj.userData.deliveryHome);
+  for(const home of homes)for(const prop of props){
+    const tree=prop.obj.name.startsWith('tree');
+    if(!tree&&!/^(kart-|car-|bench)/.test(prop.obj.name))continue;
+    const loX=tree?prop.obj.position.x-0.35:prop.box.min.x;
+    const hiX=tree?prop.obj.position.x+0.35:prop.box.max.x;
+    const loZ=tree?prop.obj.position.z-0.35:prop.box.min.z;
+    const hiZ=tree?prop.obj.position.z+0.35:prop.box.max.z;
+    if(hiX<=home.box.min.x||loX>=home.box.max.x||hiZ<=home.box.min.z||loZ>=home.box.max.z)continue;
+    const dx=prop.obj.position.x>=home.obj.position.x
+      ?home.box.max.x+0.45-loX:home.box.min.x-0.45-hiX;
+    const old=prop.obj.position.clone();
+    prop.obj.position.x+=dx;
+    prop.obj.updateMatrixWorld(true);prop.box.setFromObject(prop.obj);
+    if(tree)for(const snow of props){
+      if(snow.obj.name.startsWith('snow-flat')&&Math.hypot(snow.obj.position.x-old.x,snow.obj.position.z-old.z)<0.4){
+        snow.obj.position.x+=dx;snow.obj.updateMatrixWorld(true);snow.box.setFromObject(snow.obj);
+      }
+    }
+  }
+}
+
 export async function decorateVillage(scene, props, place) {
   const bulbs = [];
   const colors = ['#ffb96b','#ed6471','#77dfcb'];
@@ -304,8 +336,16 @@ export async function decorateVillage(scene, props, place) {
     const tree = ornamentTrees.filter(candidate=>!decoratedTrees.has(candidate)).reduce((best,candidate)=>
       Math.hypot(candidate.obj.position.x-x,candidate.obj.position.z-z) < Math.hypot(best.obj.position.x-x,best.obj.position.z-z) ? candidate : best);
     decoratedTrees.add(tree);
-    await place({model:`holiday-kit/${ornamentModels[index]}.glb`,
-      pos:[tree.obj.position.x,Math.min(2.3,tree.box.max.y*0.42),tree.box.max.z+0.05],size:[0.65,0.8,0.14],scale:1});
+    const center=tree.box.getCenter(new THREE.Vector3());
+    const y=tree.box.min.y+(tree.box.max.y-tree.box.min.y)*0.46;
+    // The canopy narrows upward: its overall AABB front floats away at this height.
+    const ray=new THREE.Raycaster(new THREE.Vector3(center.x,y,tree.box.max.z+2),new THREE.Vector3(0,0,-1));
+    const hit=ray.intersectObject(tree.obj,true)[0];
+    const surfaceZ=hit?hit.point.z:tree.obj.position.z;
+    const ornament=await place({model:`holiday-kit/${ornamentModels[index]}.glb`,
+      pos:[center.x,y-0.32,surfaceZ+0.04],size:[0.52,0.64,0.12],scale:1});
+    ornament.obj.name='tree-ornament-'+ornamentModels[index];
+    tree.obj.attach(ornament.obj);
   }
   const perchTrees = props.filter(({obj}) => obj.name.startsWith('tree') && Math.abs(obj.position.x) > 12 && Math.abs(obj.position.z) < 11).slice(0, 4);
   for (const [index, {obj, box}] of perchTrees.entries()) {
