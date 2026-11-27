@@ -14,6 +14,38 @@ export const RANGE = 34;     // show one quarter of the former map area around t
 const ICON_LAYER = 1;
 const Y = 40;                // icons float above everything
 
+export function deliveryStarTexture(color, backdrop = true) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.translate(64, 64);
+  if (backdrop) {
+    ctx.fillStyle = '#253044';
+    ctx.beginPath();
+    ctx.arc(0, 0, 54, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const angle = -Math.PI / 2 + i * Math.PI / 5;
+    const radius = i % 2 ? 21 : 47;
+    const x = Math.cos(angle) * radius, y = Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 26;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#fff9e8';
+  ctx.stroke();
+  return new THREE.CanvasTexture(canvas);
+}
+
 function icon(geometry, color, order) {
   const m = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color, depthTest: false, depthWrite: false }));
   m.rotation.x = -Math.PI / 2;      // lay the flat shape on the ground plane
@@ -63,6 +95,21 @@ export class Minimap {
       scene.add(iceIcon);
     }
     for (const m of [...Object.values(this.icons), this.wedge]) scene.add(m);
+  }
+
+  setDeliveryTargets(targets) {
+    for (const marker of this.deliveryMarkers ?? []) this.scene.remove(marker);
+    this.deliveryMarkers = targets.map(({ position, texture }) => {
+      const marker = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: texture, depthTest: false, depthWrite: false, transparent: true,
+      }));
+      marker.layers.set(ICON_LAYER);
+      marker.renderOrder = 25;
+      marker.scale.set(6.5, 6.5, 1); // keep delivery stars legible at the closer map zoom
+      this.place(marker, position);
+      this.scene.add(marker);
+      return marker;
+    });
   }
 
   rect() {   // window CSS pixels, origin top-left
