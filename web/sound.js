@@ -29,6 +29,7 @@ export class Sound {
       this.voices.push(v);
     }
     this.next = 0;
+    this.uiVoices = new Set();
     this.roles = {};
     this.buffers = {};
     this.muted = false;
@@ -67,8 +68,13 @@ export class Sound {
       const a = new THREE.Audio(this.listener);
       a.setBuffer(buffer);
       a.setVolume(gain);
+      this.uiVoices.add(a);
       a.play();
-      a.source.onended = () => a.disconnect();
+      a.source.onended = () => {
+        a.isPlaying = false;
+        a.disconnect();
+        this.uiVoices.delete(a);
+      };
       return;
     }
     const v = this.voices[this.next];
@@ -84,5 +90,6 @@ export class Sound {
   toggleMute() {
     this.muted = !this.muted;
     if (this.muted) for (const v of this.voices) if (v.isPlaying) v.stop();
+    if (this.muted) for (const voice of this.uiVoices) if (voice.isPlaying) voice.stop();
   }
 }

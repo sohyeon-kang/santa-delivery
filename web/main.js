@@ -1,22 +1,37 @@
-// P3 Starter (three.js): walk around a Kenney town with a dog that greets you and plays fetch.
+// Santa apprentice: gifts, slippery winter streets and Christmas village scenery.
 // Run a local server in the P3-Starter-Pack folder:  python -m http.server 8000
 // then open http://localhost:8000/web/
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { Animator, Dog, Player, headingOf, turnToward } from './actors.js';
-import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js';
-import { ICE_PATCHES, onIce } from './ice.js';
-import { buildIce } from './iceMaterial.js';
+import { Animator, Player, headingOf, turnToward } from './actors.js';
+import { winterVillage, buildWinterHouse, clearHouseEdges, decorateVillage, winterRoadMaterial, GIFT_TREE_POSITIONS } from './village.js?v=details-20261128-4';
+import { createVillagers } from './villagers.js';
+import { SantaPlayer, SANTA_SCALE, makeGift, setGiftModels, withCarryClips } from './santa.js?v=details-20261128-4';
+import { ICE_PATCHES, onIce } from './ice.js?v=park-ice-20261128-4';
+import { buildIce } from './iceMaterial.js?v=park-ice-20261128-4';
 import { snowMaterial, snowProfile } from './snowMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
-import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js';
+import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js?v=details-20261128-4';
 import { Sound } from './sound.js';
+import { Music } from './music.js?v=details-20261128-4';
+import { DeliveryEffects } from './deliveryEffects.js';
+import { dressSanta } from './santaAppearance.js?v=details-20261128-4';
 
 const MODELS = '../assets/models/';
 const params = new URLSearchParams(location.search);   // test options: cam, demo, t
+document.body.classList.toggle('debug',params.get('debug') === '1');
 const CLICK_PIXELS = 5;   // a press that moves less than this is a click, not a camera drag
+let activeHint = null;
+const seenHints = new Set();
+function notify(title, text = '', priority = 1, duration = 4, once = null) {
+  if (once && seenHints.has(once)) return;
+  const now = performance.now();
+  if (activeHint && activeHint.until > now && activeHint.priority > priority) return;
+  activeHint = { title, text, priority, until:now+duration*1000 };
+  if (once) seenHints.add(once);
+}
 
 // ------------------------------------------------------------ renderer and scene
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -36,20 +51,24 @@ addEventListener('resize', () => {
 });
 
 const data = await (await fetch('../' + (params.get('scene') ?? 'scene.json'))).json();   // ?scene=other.json
-const sky = new THREE.Color('#91a9ca');
-scene.background = sky;
-scene.fog = new THREE.FogExp2(sky, 0.012);
+const sky = new THREE.Color('#7d88a4');
+const skyTexture = await new THREE.TextureLoader().loadAsync('../assets/skyboxes/skybox-morning.png');
+skyTexture.colorSpace = THREE.SRGBColorSpace;
+skyTexture.mapping = THREE.EquirectangularReflectionMapping;
+scene.background = skyTexture;
+scene.backgroundIntensity = 0.3;
+scene.fog = new THREE.FogExp2(sky, 0.006);
 
 // image-based ambient light from an HDRI (Poly Haven, CC0)
 const hdr = await new RGBELoader().loadAsync('../assets/hdri/kloofendal_48d_partly_cloudy_puresky_1k.hdr');
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromEquirectangular(hdr).texture;
-scene.environmentIntensity = 0.57;
+scene.environmentIntensity = 0.35;
 // keep the equirectangular HDR: the ice shader reads it as its environment map
 
 // sun with a shadow camera that follows the player
 const sunDir = new THREE.Vector3(...data.sun.direction).normalize();
-const sun = new THREE.DirectionalLight(new THREE.Color(...data.sun.color), data.sun.intensity * 0.86);
+const sun = new THREE.DirectionalLight('#ffceaa', 0.75);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 140 });
@@ -73,6 +92,11 @@ function loadGLB(rel) {
 }
 
 async function place(desc, winter = false) {
+  if (desc.winterHouse) {
+    const house = await buildWinterHouse(desc, place);
+    scene.add(house.obj);
+    return house;
+  }
   const gltf = await loadGLB(desc.model);
   const kit = desc.model.split('/')[0];
   // SkeletonUtils.clone also copies bones, so skinned characters can be instanced
@@ -84,11 +108,29 @@ async function place(desc, winter = false) {
       o.castShadow = o.receiveShadow = true;
       const prepare = (material) => {
         if (material.map) material.map.magFilter = THREE.NearestFilter;
-        return snowMaterial(material, profile);
+        return kit === 'tower-defense-kit' ? winterRoadMaterial(material) : snowMaterial(material, profile);
       };
       o.material = Array.isArray(o.material) ? o.material.map(prepare) : prepare(o.material);
     }
   });
+  if (desc.size || desc.height) {
+    const bounds = new THREE.Box3().setFromObject(obj);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const wrapper = new THREE.Group();
+    wrapper.add(obj);
+    obj.position.sub(new THREE.Vector3(center.x,bounds.min.y,center.z));
+    if (desc.height) wrapper.scale.setScalar(desc.height / size.y);
+    else wrapper.scale.set(desc.size[0]/size.x,desc.size[1]/size.y,desc.size[2]/size.z);
+    const placed = new THREE.Group();
+    placed.name = obj.name;
+    placed.add(wrapper);
+    placed.position.set(...(desc.pos ?? [0,0,0]));
+    placed.rotation.y = THREE.MathUtils.degToRad(desc.rotY ?? 0);
+    placed.userData.ambient = !!desc.ambient;
+    scene.add(placed);
+    return { obj: placed, clips: gltf.animations };
+  }
   obj.position.set(...(desc.pos ?? [0, 0, 0]));
   obj.rotation.y = THREE.MathUtils.degToRad(desc.rotY ?? 0);
   obj.scale.setScalar((desc.scale ?? 1) * (data.kitScale[kit] ?? 1));
@@ -101,12 +143,15 @@ const giftFiles = ['present-a-cube', 'present-b-cube', 'present-a-rectangle',
 setGiftModels(await Promise.all(giftFiles.map(async name =>
   (await loadGLB('holiday-kit/' + name + '.glb')).scene)));
 
-const props = await Promise.all(data.props
+const props = await Promise.all(winterVillage(data)
   .filter(({ model }) => !/^nature-kit\/(grass_|flower_)/.test(model))
   .map((desc) => place(desc, true)));
 // world-space AABBs (rest pose): picking, and ground-plane colliders (see physics.js)
 for (const p of props) { p.obj.updateMatrixWorld(true); p.box = new THREE.Box3().setFromObject(p.obj); }
-const colliders = props.map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
+clearHouseEdges(props);
+const colliders = props.filter(p => !p.obj.userData.ambient).map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
+const village = await decorateVillage(scene, props, place);
+const villagers = createVillagers(props, colliders);
 
 // player = rig (position, heading) > tilt (lean around the feet) > model   (see santa.js)
 const p = await place(data.player);
@@ -119,20 +164,14 @@ p.obj.rotation.set(0, 0, 0);
 tilt.add(p.obj);
 rig.add(tilt);
 scene.add(rig);
+dressSanta(p.obj);
 const player = new SantaPlayer(rig, tilt, new Animator(p.obj, withCarryClips(p.clips)), colliders, scene);
-const d = await place(data.dog);
-const dog = new Dog(d.obj, new Animator(d.obj, d.clips), data.dog.home ?? data.dog.pos,
-  data.dog.wanderRadius ?? 4, colliders);
 
 const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(Ball.RADIUS, 24, 16),
   new THREE.MeshStandardMaterial({ color: '#e0261a', roughness: 0.5 }));
 ballMesh.castShadow = true;
 scene.add(ballMesh);
 const ball = new Ball(ballMesh);
-
-// observers: the player waves back when greeted, the dog chases a thrown ball
-dog.onGreet.push((dg) => player.wave(dg.pos));
-player.onThrow.push((pl) => dog.ballThrown(ball, pl.pos));
 
 // sound effects are observers too: they react to the same events
 const sound = new Sound(scene);
@@ -147,7 +186,6 @@ const up = (q, h) => q.clone().add(new THREE.Vector3(0, h, 0));
 player.onStep.push((pl) => sound.play('step_' + surface(pl.pos), pl.pos.clone()));
 player.onThrow.push((pl) => sound.play('throw', up(pl.pos, 1.2)));
 ball.onHit.push((b, kind, v) => sound.play(kind === 'ground' ? 'bounce' : 'wall', b.pos.clone(), Math.min(1, v / 5)));
-dog.onBark.push((dg) => sound.play('bark', up(dg.pos, 0.5)));
 
 // ice patches with the hand-written shader (iceMaterial.js)
 const ice = buildIce(scene, ICE_PATCHES, hardGround, {
@@ -161,13 +199,10 @@ player.onBalance.push((pl, e) => {
   if (e === 'fall') sound.play('fall', pl.pos.clone());
 });
 // Clear pickup spots beside the five park trees (world x/z).
-const giftSpots = [
-  [[-0.95, 3.3], [0, 3.5], [0.95, 3.3]],
-  [[-6.2, 0.8], [-5.3, 1], [-4.4, 0.8]],
-  [[4.5, 0.6], [5.4, 0.8], [6.3, 0.6]],
-  [[4.3, 6.5], [5.2, 6.7], [6.1, 6.5]],
-  [[-6.2, 6], [-5.3, 6.2], [-4.4, 6]],
-];
+const giftSpots = GIFT_TREE_POSITIONS.map(([x,z], index) => {
+  const distance = index === 0 ? 3.3 : 2;
+  return [[x-0.9,z+distance],[x,z+distance+0.2],[x+0.9,z+distance]];
+});
 const lastTree = new Map();
 const groundGifts = new Map();
 const pickupRadius = 1.8;
@@ -193,6 +228,9 @@ for (let id = 0; id < 5; id++) spawnGift(id);
 function takeGift(gift) {
   groundGifts.delete(gift.userData.giftId);
   player.gifts.add(gift);
+  if (player.carry >= 4) notify('선물이 너무 많아요! 곧 떨어져요!','',8,3);
+  else if (player.carry === 3) notify('선물이 흔들리기 시작해요!','',5,4);
+  else notify('★ 별이 뜬 집으로 가세요','미니맵에서도 찾을 수 있어요',3,5,'pickup');
 }
 function nearbyGift() {
   let nearest = null, distance = pickupRadius;
@@ -203,6 +241,7 @@ function nearbyGift() {
   return nearest;
 }
 player.onGiftBreak.push((pl, q, id) => {
+  notify('선물이 깨졌어요!','다른 트리 아래에 다시 생겨요',9,5);
   sound.play('gift_break', q);
   spawnGift(id);
 });
@@ -271,10 +310,11 @@ const targetMarkers = deliveryTargets.map(({ obj, box }, index) => {
   const texture = deliveryStarTexture(targetColors[index]);
   const worldTexture = deliveryStarTexture('#ffe25d', false);
   const star = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: worldTexture, depthTest: false, depthWrite: false, transparent: true,
+    map: worldTexture, depthTest: true, depthWrite: false, transparent: true, toneMapped:false, fog:false,
   }));
-  star.position.set(obj.position.x, box.max.y + 1.5, obj.position.z);
-  star.scale.set(3.2, 3.2, 1);
+  star.position.set(obj.position.x, box.max.y + 2.3, obj.position.z);
+  star.scale.set(2.5, 2.5, 1);
+  star.name='delivery-world-star';
   scene.add(star);
   const groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), glowGroundMaterial);
   groundGlow.rotation.x = -Math.PI / 2;
@@ -290,19 +330,96 @@ minimap.setDeliveryTargets(deliveryTargets.map(({ obj }, index) => ({
   position: obj.position, texture: targetMarkers[index].texture,
 })));
 const deliveredHomes = new Set();
-const startedAt = performance.now();
+const automated = params.has('t') || params.has('demo');
+let startedAt = automated ? performance.now() : null;
 let finishedTime = null;
+const elapsedSeconds = () => startedAt === null ? 0 : (performance.now()-startedAt)/1000;
 const formatTime = seconds => `${Math.floor(seconds / 60)}분 ${Math.floor(seconds % 60)}초`;
 const ending = document.getElementById('ending');
 const celebration = document.getElementById('celebration');
-const endingMusic = new Audio('../assets/sounds/music/jingle-bells-kevin-macleod.mp3');
-endingMusic.preload = 'auto';
-endingMusic.volume = 0.65;
-function playEndingMusic() {
-  endingMusic.muted = sound.muted;
-  endingMusic.currentTime = 0;
-  endingMusic.play().catch(error => console.warn('ending music:', error));
+const startOverlay = document.getElementById('start-overlay');
+const startButton = document.getElementById('start-game');
+const showInstructions = document.getElementById('show-instructions');
+const gameHud = document.getElementById('game-hud');
+const guide = document.getElementById('guide');
+const guideTitle = document.getElementById('guide-title');
+const guideText = document.getElementById('guide-text');
+const deliveryCount = document.getElementById('delivery-count');
+const elapsedTime = document.getElementById('elapsed-time');
+const soundToggle = document.getElementById('sound-toggle');
+const music = new Music(() => {
+  const status = document.getElementById('audio-status');
+  status.textContent = '캐롤을 재생하지 못했습니다. 소리를 껐다가 다시 켜 보세요.';
+  status.hidden = false;
+});
+const deliveryEffects = new DeliveryEffects(scene);
+for (const container of document.querySelectorAll('.music-credits')) {
+  container.append(document.getElementById('music-credit-template').content.cloneNode(true));
 }
+startOverlay.hidden = automated;
+gameHud.hidden = guide.hidden = !automated;
+function toggleSound() {
+  sound.toggleMute();
+  music.setMuted(sound.muted);
+  soundToggle.textContent = sound.muted ? '소리 켜기' : '소리 끄기';
+  soundToggle.setAttribute('aria-pressed',String(sound.muted));
+  document.getElementById('audio-status').hidden = true;
+  sound.resume();
+}
+soundToggle.addEventListener('click',toggleSound);
+function beginGame() {
+  if (startedAt !== null) return;
+  startedAt = performance.now();
+  keys.clear();
+  startOverlay.hidden = true;
+  gameHud.hidden = guide.hidden = false;
+  sound.resume();
+  music.setMuted(sound.muted);
+  music.start();
+  if (!params.has('cam')) Object.assign(cam,{dist:9,pitch:0.35});
+  renderer.domElement.tabIndex = -1;
+  renderer.domElement.focus();
+}
+startButton.addEventListener('click',beginGame);
+const instructionPages = [
+  ['선물부터 챙겨요!','트리 아래 선물 가까이에서 Space 또는 클릭으로 주워요.'],
+  ['미끄러워도 괜찮아요!','WASD로 이동하고 Shift로 달려요.\n휘청이면 Shift를 떼어 버텨요.'],
+  ['별빛을 따라 선물을 전해요!','별이 뜬 집 앞에서 Space 또는 집을 클릭하세요.\n다섯 집에 선물을 전하면 성공이에요.'],
+];
+let instructionPage = 0;
+function showInstructionPage() {
+  document.getElementById('instruction-progress').textContent = `${instructionPage+1} / 3`;
+  document.getElementById('instruction-title').textContent = instructionPages[instructionPage][0];
+  document.getElementById('instruction-copy').textContent = instructionPages[instructionPage][1];
+  document.getElementById('instruction-next').textContent = instructionPage === 2 ? '게임 시작' : '다음';
+  document.getElementById('instruction-next').classList.toggle('red-button',instructionPage === 2);
+}
+showInstructions.addEventListener('click',() => {
+  document.getElementById('intro-panel').hidden = true;
+  document.querySelector('.start-actions').hidden = true;
+  document.getElementById('instructions').hidden = false;
+  document.getElementById('instruction-actions').hidden = false;
+  showInstructionPage();
+});
+document.getElementById('instruction-next').addEventListener('click',() => {
+  if (instructionPage === 2) beginGame();
+  else { instructionPage++; showInstructionPage(); }
+});
+document.getElementById('instruction-back').addEventListener('click',() => {
+  if (instructionPage > 0) { instructionPage--; showInstructionPage(); }
+  else {
+    document.getElementById('intro-panel').hidden = false;
+    document.querySelector('.start-actions').hidden = false;
+    document.getElementById('instructions').hidden = true;
+    document.getElementById('instruction-actions').hidden = true;
+  }
+});
+document.getElementById('skip-instructions').addEventListener('click',beginGame);
+function resumeTitleMusic() {
+  if (startedAt === null && music.audio.paused) music.preview();
+}
+for (const event of ['pointerdown','keydown']) addEventListener(event,resumeTitleMusic);
+music.preview();
 function celebrate() {
   const colors = ['#ffe17a', '#fff4c2', '#ff8f8f', '#9fe0ff', '#dcb6ff'];
   for (let i = 0; i < 5; i++) {
@@ -328,12 +445,16 @@ function celebrate() {
   }
 }
 function showEnding() {
-  finishedTime = (performance.now() - startedAt) / 1000;
+  if (finishedTime !== null) return;
+  finishedTime = elapsedSeconds();
   document.getElementById('final-time').textContent = formatTime(finishedTime);
   ending.hidden = false;
+  startOverlay.hidden = gameHud.hidden = guide.hidden = true;
   deliveryNotice.hidden = true;
   celebrate();
-  playEndingMusic();
+  music.setMuted(sound.muted);
+  music.finish();
+  document.getElementById('play-again').focus();
 }
 document.getElementById('play-again').addEventListener('click', () => location.reload());
 let pendingDelivery = null;
@@ -345,6 +466,10 @@ function distanceToHome({ box }) {
   return Math.hypot(x, z);
 }
 function deliverTo(target) {
+  if (target && deliveredHomes.has(target) && distanceToHome(target) <= 2) {
+    notify('이미 선물한 집이에요','아직 별이 뜬 집으로 가세요',4,4);
+    return false;
+  }
   if (!target || pendingDelivery || deliveredHomes.has(target) || !player.carry || player.balance.locked || distanceToHome(target) > 2) return false;
   const gift = player.gifts.removeTop(scene);
   const start = gift.position.clone();
@@ -360,10 +485,11 @@ function deliverTo(target) {
   player.body.vel.x = player.body.vel.z = 0;
   const arm = player.tilt.getObjectByName('arm-right');
   pendingDelivery = { target, gift, start, handoff, finish, arm, armStartX: arm.rotation.x, time: 0 };
+  sound.play('doorbell');
   walkTarget = null;
   return true;
 }
-function finishDelivery({ target, gift }) {
+function finishDelivery({ target, gift, finish }) {
   scene.remove(gift);
   walkTarget = null;
   deliveredHomes.add(target);
@@ -374,19 +500,23 @@ function finishDelivery({ target, gift }) {
   minimap.setDeliveryTargets(deliveryTargets.flatMap(({ obj }, i) =>
     deliveredHomes.has(deliveryTargets[i]) ? [] : [{ position: obj.position, texture: targetMarkers[i].texture }]));
   deliveryNoticeTime = 3.0;
+  deliveryNotice.textContent = `선물 전달 완료! ${deliveredHomes.size} / 5`;
   deliveryNotice.hidden = false;
+  notify(`선물 전달 완료! ${deliveredHomes.size} / 5`,deliveredHomes.size < 5 ? '다음 별이 뜬 집으로 가세요' : '',8,4);
+  deliveryEffects.burst(finish);
+  sound.play('delivery_chime');
   if (deliveredHomes.size === 5) {
     showEnding();
   }
 }
-function nearbyHome() {
-  return deliveryTargets.filter(target => !deliveredHomes.has(target))
+function nearbyHome(includeDelivered = false) {
+  return deliveryTargets.filter(target => includeDelivered || !deliveredHomes.has(target))
     .sort((a, b) => distanceToHome(a) - distanceToHome(b))[0];
 }
 
 // pick the nearest object under the mouse; if it is the ground, walk there
 function click(mx, my) {
-  if (finishedTime !== null) return;
+  if (startedAt === null || finishedTime !== null) return;
   if (pendingDelivery) return;
   if (minimap.contains(mx, my)) {             // a click on the minimap: walk there
     walkTarget = minimap.toWorld(mx, my);
@@ -396,7 +526,7 @@ function click(mx, my) {
   }
   const ray = mouseRay(mx, my, innerWidth, innerHeight, camera);
   let best = null, bestT = Infinity;
-  const pickable = [...props, ...groundGifts.values(), { obj: d.obj, box: new THREE.Box3().setFromObject(d.obj) }];
+  const pickable = [...props, ...groundGifts.values()];
   for (const it of pickable) {
     const t = rayAABB(ray, it.box);
     if (t !== null && t < bestT) { best = it.obj; bestT = t; }
@@ -429,7 +559,7 @@ function click(mx, my) {
 }
 
 // ------------------------------------------------------------ follow camera
-const cam = { yaw: THREE.MathUtils.degToRad(data.camera?.yaw ?? 0), pitch: 0.35, dist: 9,
+const cam = { yaw: THREE.MathUtils.degToRad(data.camera?.yaw ?? 0), pitch: automated ? 0.35 : 0.6, dist: automated ? 9 : 26,
               target: player.pos.clone().add(new THREE.Vector3(0, 1.4, 0)) };
 if (params.get('cam')) {
   const [y, pt, r] = params.get('cam').split(',').map(Number);
@@ -479,20 +609,22 @@ function teleportToIce() {
 // ------------------------------------------------------------ input
 const keys = new Set();
 addEventListener('keydown', (e) => {
+  if (e.code === 'KeyM' && !e.repeat) { toggleSound(); return; }
+  if (e.target instanceof Element && e.target.closest('button,a,summary,input,textarea')) return;
+  if (startedAt === null) return;
   if (e.code.startsWith('Arrow')) e.preventDefault();
   if (finishedTime !== null) return;
   keys.add(e.code);
   if (e.code === 'KeyB') colliderView.visible = !colliderView.visible;
   if (e.code === 'KeyF' && !e.repeat) player.throw(ball, camForward());
   if (e.code === 'KeyE' && !e.repeat) player.wave();
-  if (e.code === 'KeyM' && !e.repeat) { sound.toggleMute(); endingMusic.muted = sound.muted; }
   // ---- spike test keys (remove or hide before submission)
   if (e.code === 'Space') {
     e.preventDefault();
     if (!e.repeat && !player.balance.locked) {
       const gift = nearbyGift();
       if (gift) takeGift(gift);
-      else deliverTo(nearbyHome());
+      else deliverTo(nearbyHome(true));
     }
   }
   if (debugIceShortcut && /^Digit[0-5]$/.test(e.code) && !e.repeat) setCarry(Number(e.code.slice(5)));   // carry 0..5 gifts
@@ -579,7 +711,14 @@ function demoStep(t, dt) {
 let simT = 0;
 if (params.get('soundlog')) sound.log = [];
 function step(dt) {
+  deliveryEffects.update(dt);
   if (finishedTime !== null) return;
+  if (startedAt === null) {
+    village.update(performance.now()/1000,dt);
+    villagers.update(dt);
+    updateCamera(dt);
+    return;
+  }
   simT += dt;
   sound.time = simT;
   if (demo) demoStep(simT, dt);
@@ -618,7 +757,8 @@ function step(dt) {
     stuck = moved < 0.3 * Player.WALK * dt ? stuck + dt : 0;
     if (stuck > 0.6) walkTarget = null;
   }
-  dog.update(dt, player.pos);
+  village.update(simT, dt);
+  villagers.update(dt);
   ball.update(dt, colliders);
   marker.visible = walkTarget !== null;
   if (walkTarget) marker.position.copy(walkTarget).setY(0.02);
@@ -628,28 +768,61 @@ function step(dt) {
   updateCamera(dt);
   // third-person games put the ears on the character and turn them with the camera
   sound.setListener(up(player.pos, 1.4), camera.quaternion);
-  minimap.update({ player, dog, ball, walkTarget, mainCamera: camera, camYaw: cam.yaw });
+  minimap.update({ player, ball, walkTarget, mainCamera: camera, camYaw: cam.yaw });
 }
 
 function renderFrame() {
   renderer.render(scene, camera);
-  minimap.render(renderer);                   // HUD, drawn last on top
+  if (startedAt !== null && finishedTime === null) minimap.render(renderer);
 }
 
-const hudDog = document.getElementById('dogstate');
 const hudBal = document.getElementById('balance');
+function setText(element, text) {
+  if (element.textContent !== text) element.textContent = text;
+}
 function updateHud() {
-  hudDog.textContent = dog.state;
+  const elapsed = formatTime(finishedTime ?? elapsedSeconds());
+  setText(deliveryCount,`${deliveredHomes.size} / 5`);
+  setText(elapsedTime,elapsed);
+  if (startedAt !== null && finishedTime === null) {
+    if (player.onIce) notify('빙판이에요! 더 미끄러워요','속도를 줄이고 미리 방향을 바꾸세요',4,5,'ice');
+    if ((keys.has('ShiftLeft') || keys.has('ShiftRight')) && player.body.speed > 0.3) {
+      notify('Shift를 누르면 빨라져요','급회전은 조심하세요',2,4,'sprint');
+    }
+  }
+  let title = player.carry ? '★ 별이 뜬 집으로 가세요' : '트리 아래 선물을 주우세요';
+  let instruction = player.carry ? '미니맵에서도 찾을 수 있어요' : '가까이에서 Space 또는 클릭';
+  const target = nearbyHome();
+  const atHome = player.carry && target && distanceToHome(target) <= 2;
+  if (atHome) {
+    title = 'Space 또는 집 클릭으로 선물을 전하세요';
+    instruction = '';
+  }
+  if (activeHint && activeHint.until > performance.now() && (!atHome || activeHint.priority >= 7)) {
+    title = activeHint.title;
+    instruction = activeHint.text;
+  }
+  const wobbling = player.balance.state === 'WOBBLE';
+  const danger=document.getElementById('danger-warning');
+  const warning=wobbling?'휘청! Shift를 떼세요':player.carry>=4&&!player.balance.locked?'선물이 떨어져요!':'';
+  danger.hidden=!warning||startedAt===null||finishedTime!==null;
+  setText(document.getElementById('danger-text'),warning);
+  guideText.hidden = !instruction;
+  setText(guideTitle,title);
+  setText(guideText,instruction);
   const loadWarning = player.carry >= 3 ? ' · 선물 휘청임' : '';
   hudBal.textContent = `${player.onIce ? 'ICE' : 'snow'} · ${player.body.speed.toFixed(1)} m/s · ${player.balance.state}`
-    + ` · 들고 있는 선물 ${player.carry}/5${loadWarning} · 트리 아래 ${groundGifts.size} · 배달 ${deliveredHomes.size}/5`
-    + ` · 시간 ${formatTime(finishedTime ?? (performance.now() - startedAt) / 1000)}`
+    + ` · 들고 있는 선물 ${player.carry}/5${loadWarning} · 트리 아래 ${groundGifts.size} · 전달 ${deliveredHomes.size}/5`
+    + ` · 시간 ${elapsed}`
     + ` · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
+startButton.disabled = showInstructions.disabled = false;
+startButton.textContent = '게임 시작';
 const clock = new THREE.Clock();
 let frames = 0, fpsTime = 0;
 updateCamera(0);
+minimap.update({player,ball,walkTarget,mainCamera:camera,camYaw:cam.yaw});
 
 if (params.get('t')) {
   // test mode: simulate a fixed number of 1/60 s steps, then keep showing that frame

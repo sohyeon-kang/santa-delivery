@@ -6,7 +6,8 @@
 //   - icons live on layer 1, which only the minimap camera renders
 //   - clicking the map makes the player walk to that spot
 import * as THREE from 'three';
-import { ICE_PATCHES } from './ice.js';
+import { ICE_PATCHES } from './ice.js?v=park-ice-20261128-4';
+import { parkPathGeometry } from './parkPathGeometry.js';
 
 export const SIZE = 320;     // CSS pixels
 export const MARGIN = 16;    // CSS pixels from the window corner
@@ -34,14 +35,14 @@ export function deliveryStarTexture(color, backdrop = true) {
   }
   ctx.closePath();
   ctx.shadowColor = color;
-  ctx.shadowBlur = 26;
+  ctx.shadowBlur = backdrop ? 26 : 8;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
   ctx.fillStyle = color;
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.lineWidth = 4;
-  ctx.strokeStyle = '#fff9e8';
+  ctx.strokeStyle = backdrop ? '#fff9e8' : '#72501f';
   ctx.stroke();
   return new THREE.CanvasTexture(canvas);
 }
@@ -79,7 +80,6 @@ export class Minimap {
     const s = RANGE * 0.07;          // icon size in metres (about 8 px)
     this.icons = {
       playerBack: icon(arrowShape(s * 1.35), 0x1a1a1a, 20), player: icon(arrowShape(s), 0xffd91a, 21),
-      dogBack: icon(new THREE.CircleGeometry(s * 0.75, 16), 0x1a1a1a, 20), dog: icon(new THREE.CircleGeometry(s * 0.6, 16), 0xf28c26, 21),
       ballBack: icon(new THREE.CircleGeometry(s * 0.55, 12), 0x1a1a1a, 20), ball: icon(new THREE.CircleGeometry(s * 0.4, 12), 0xe61a10, 21),
       target: icon(new THREE.RingGeometry(s * 0.45, s * 0.6, 20), 0x33ff66, 19),
     };
@@ -89,6 +89,15 @@ export class Minimap {
     this.wedge.layers.set(ICON_LAYER);
     this.wedge.frustumCulled = false;
     for (const patch of ICE_PATCHES) {
+      if (patch.shape === 'bezier') {
+        const path = new THREE.Mesh(parkPathGeometry(patch),new THREE.MeshBasicMaterial({color:patch.color,depthTest:false,depthWrite:false}));
+        path.position.y = Y;
+        path.layers.set(ICON_LAYER);
+        path.renderOrder = 12;
+        path.name = 'park-bezier-minimap';
+        scene.add(path);
+        continue;
+      }
       const iceIcon = icon(iceShape(patch.shape), '#cff1fc', 12);
       iceIcon.scale.set(patch.h[0], patch.h[1], 1);
       this.place(iceIcon, { x: patch.c[0], z: patch.c[1] });
@@ -130,15 +139,14 @@ export class Minimap {
     if (heading !== null) m.rotation.set(-Math.PI / 2, 0, heading + Math.PI);   // shape +Y -> model +Z
   }
 
-  update({ player, dog, ball, walkTarget, mainCamera, camYaw }) {
+  update({ player, ball, walkTarget, mainCamera, camYaw }) {
     this.center.set(player.pos.x, 0, player.pos.z);
     this.camera.position.set(this.center.x, 80, this.center.z);
     this.camera.lookAt(this.center);
     const I = this.icons;
     this.place(I.playerBack, player.pos, player.obj.rotation.y);
     this.place(I.player, player.pos, player.obj.rotation.y);
-    this.place(I.dogBack, dog.pos); this.place(I.dog, dog.pos);
-    const showBall = !ball.held || dog.state === 'RETURN';
+    const showBall = !ball.held;
     I.ball.visible = I.ballBack.visible = showBall;
     this.place(I.ballBack, ball.pos); this.place(I.ball, ball.pos);
     I.target.visible = walkTarget !== null;

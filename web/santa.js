@@ -15,8 +15,8 @@
 import * as THREE from 'three';
 import { Player, turnToward, headingOf } from './actors.js';
 import { pushOut } from './physics.js';
-import { SlideBody, Balance } from './slide.js';
-import { iceSurface } from './ice.js';
+import { SlideBody, Balance } from './slide.js?v=details-20261128-4';
+import { iceSurface } from './ice.js?v=park-ice-20261128-4';
 
 export const SANTA_SCALE = 1.0;
 const GIFT_SCALE = 2.0;
@@ -43,22 +43,6 @@ export function makeGift(i) {
   gift.add(visual);
   gift.userData.halfHeight = height / 2;
   return gift;
-}
-
-// a bright "!" above the head while wobbling (shape + colour, not colour alone)
-function makeAlert() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d');
-  g.fillStyle = '#ffd35c'; g.strokeStyle = '#1a1a1a'; g.lineWidth = 10;
-  g.beginPath(); g.moveTo(64, 8); g.lineTo(122, 116); g.lineTo(6, 116); g.closePath(); g.fill(); g.stroke();
-  g.fillStyle = '#1a1a1a'; g.font = 'bold 76px system-ui, sans-serif'; g.textAlign = 'center'; g.fillText('!', 64, 106);
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
-  s.scale.setScalar(0.55);
-  s.position.y = 2.35 * SANTA_SCALE;
-  s.renderOrder = 10;
-  s.visible = false;
-  return s;
 }
 
 export class GiftStack {
@@ -139,8 +123,6 @@ export class SantaPlayer extends Player {
     this.gifts = new GiftStack(grip);
     this.falling = [];
     this.onIce = false;
-    this.alert = makeAlert();
-    rig.add(this.alert);
     this.onBalance = [];      // observers: f(player, event) with event 'wobble' 'recover' 'fall' 'getup' 'drop'
     this.onGiftBreak = [];    // observers: f(player, position, giftId)
   }
@@ -203,7 +185,6 @@ export class SantaPlayer extends Player {
     // 4. tilt around the feet + the gift tower
     this.tilt.rotation.set(b.pitchX, 0, b.swayZ);
     this.gifts.update(this.balance.clock, b.swayZ);
-    this.alert.visible = this.balance.state === 'WOBBLE' || this.carry >= 4;
 
     // 5. gifts in the air
     this.falling = this.falling.filter((fg) => {

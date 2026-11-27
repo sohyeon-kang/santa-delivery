@@ -10,6 +10,7 @@ const profiles = {
 const variants = new WeakMap();
 
 export function snowProfile(kit, name) {
+  if (kit === 'fantasy-town-kit') return 'roof';
   if (kit === 'city-kit-roads' && /^(road-|tile-)/.test(name) || name.startsWith('driveway-')) return 'paved';
   if (name.startsWith('building-')) return 'roof';
   if (name.startsWith('tree') && !name.includes('-snow') || name.startsWith('plant_')) return 'foliage';

@@ -15,7 +15,17 @@ CC0 에셋은 출처 표기 없이 수정하고, 공개하고, 상업적으로�
 | `assets/models/nature-kit` | Nature Kit (2.1) | 329 | 나무, 바위, 꽃, 절벽, 다리, 텐트, 캠프파이어 | https://kenney.nl/assets/nature-kit |
 | `assets/models/city-kit-roads` | City Kit Roads (2.2) | 95 | 도로 타일(직선, 교차로, 횡단보도, 곡선, 다리), 가로등, 신호등, 표지판, 전봇대 | https://kenney.nl/assets/city-kit-roads |
 | `assets/models/city-kit-commercial` | City Kit Commercial (2.1) | 41 | 상가 건물, 고층 빌딩, 차양, 파라솔 | https://kenney.nl/assets/city-kit-commercial |
-| `assets/models/holiday-kit` | Holiday Kit (2.0), CC0 | 10 | 트리 5종과 선물 상자 5종. 공용 색상 텍스처와 원본 라이선스 포함 | https://kenney.nl/assets/holiday-kit |
+| `assets/models/holiday-kit` | Holiday Kit (2.0), CC0 | 36 | 트리·선물·벤치·눈사람·통나무집 부품·바위·리스·진저브레드·호두까기 인형·전구줄·눈더미·모형 철로와 기관차·눈송이·캔디를 포함함. 원본 라이선스를 보존함 | https://kenney.nl/assets/holiday-kit |
+| `assets/models/platformer-kit` | Platformer Kit, CC0 | 1 | 흰 눈 덮인 침엽수 tree-pine-snow를 사용함. 원본 라이선스를 포함함 | https://kenney.nl/assets/platformer-kit |
+| `assets/models/fantasy-town-kit` | Fantasy Town Kit (2.0), CC0 | 2 | wall-wood와 roof-gable을 조립 주택에 사용함. 원본 라이선스를 포함함 | https://kenney.nl/assets/fantasy-town-kit |
+| `assets/models/tower-defense-kit` | Tower Defense Kit (2.1), CC0 | 6 | snow-tile-straight·crossing·corner-round와 wide-straight·wide-corner·wide-transition을 포함함. 넓은 길 타일로 도로와 보도를 연결함. 원본 라이선스를 포함함 | https://kenney.nl/assets/tower-defense-kit |
+
+### 2026-11-27 마을 꾸미기에 사용한 기존 모델과 하늘
+
+- Mini Characters의 캐릭터 20종 중 플레이어 모델을 제외한 19종을 주민으로 각각 한 명씩 사용함. 기존 idle·walk 애니메이션과 원본 비율을 유지하는 균일 배율을 적용함. Cube Pets의 penguin·deer·fox·polar·bunny와 나무 위 beaver·monkey 모델에 기존 idle·walk 애니메이션을 사용함. 해당 키트의 기존 CC0 라이선스를 따름. 별도 다람쥐 모델은 제공 키트에서 확인되지 않음.
+- Car Kit의 기존 차량과 kart-oobi·kart-oodi·kart-ooli·kart-oopi·kart-oozi를 사용함. 사용자의 차량 지정에 따라 race-future 배치를 카트 시리즈로 교체함. 기존 Car Kit CC0 라이선스를 따름.
+- `assets/skyboxes/skybox-morning.png`는 사용자가 제공한 Kenney Skyboxes (1.0)의 파노라마를 사용함. 화면 밝기를 낮춰 따뜻한 저녁 분위기로 조정함. 원본 `License.txt`의 CC0를 확인하고 함께 보존함. 제작자 표기는 Kenney (www.kenney.nl)임.
+- 새 모델은 사용한 GLB와 공용 색상 텍스처만 포함함. 주택의 창문·문·보·굴뚝과 전구는 three.js 기본 geometry로 조립함. 수목·집·도로 교체는 `web/village.js`에서 적용함.
 
 - Starter Pack 키트마다 `Preview.png`(전체 미리보기)와 원본 `License.txt`가 들어 있습니다.
 - 원본 키트에는 FBX, OBJ 형식도 있습니다. 이 팩에는 GLB만 넣었습니다.
@@ -82,3 +92,25 @@ CC0 에셋은 출처 표기 없이 수정하고, 공개하고, 상업적으로�
 
 - Kenney에는 이 밖에도 CC0 3D 키트가 많습니다(가구, 우주, 성, 음식, 플랫포머 등). 같은 스타일이라 섞어 쓰기 좋습니다.
 - 다른 곳의 에셋을 쓸 때는 라이선스를 확인하고 보고서에 출처를 적으세요. CC-BY는 출처 표기가 필수입니다.
+
+## Should 2번 음악·효과음·UI (2026-11-27)
+
+| 파일 | 제작자·출처 | 라이선스·사용 |
+|---|---|---|
+| assets/sounds/music/silent-night-kevin-macleod.mp3 | Kevin MacLeod, https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100075 | CC BY 4.0, 시작 화면 캐롤 버튼으로 재생함 |
+| assets/sounds/music/we-wish-you-kevin-macleod.mp3 | Kevin MacLeod, https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100369 | CC BY 4.0, 게임 시작 시 재생함 |
+| assets/sounds/music/deck-the-halls-b-kevin-macleod.mp3 | Kevin MacLeod, https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100368 | CC BY 4.0, 플레이 첫 곡 종료 후 반복함 |
+| assets/sounds/doorbell-qvantor.wav | Qvantor, https://freesound.org/people/Qvantor/sounds/879802/ | CC0, 선물 전달 시작 시 재생함 |
+| assets/sounds/shine-chime-qvantor.wav | Qvantor, https://freesound.org/people/Qvantor/sounds/879797/ | CC0, 배달 완료 시 재생함 |
+| assets/ui/ui-pack | Kenney UI Pack (2.0), 사용자 제공 원본 License.txt 확인함 | CC0, Green·Yellow·Red 버튼 각 1개와 라이선스를 포함함 |
+| assets/ui/pixel-adventure | Kenney UI Pack - Pixel Adventure (2.0), 사용자 제공 원본 License.txt 확인함 | CC0, Large tiles/Thin outline/tile_0000 패널과 라이선스를 포함함 |
+
+- 추가 캐롤의 로컬 MP3 메타데이터에 Kevin MacLeod와 곡명이 포함된 것을 확인함. 제작자 공식 라이선스 페이지 https://incompetech.com/music/royalty-free/licenses/ 에서 세 곡을 선택하여 생성된 CC BY 4.0 표기를 확인함.
+- 게임 시작창과 완료창의 음악 출처에 곡명·Kevin MacLeod (incompetech.com)·Creative Commons By Attribution 4.0 링크를 표시함. 기존 엔딩 Jingle Bells 출처도 유지함. 라이선스는 https://creativecommons.org/licenses/by/4.0/ 임.
+- 사용자 제공 원본 음원을 이름만 바꿔 복사함. 효과음은 원본 스테레오 48kHz WAV이며 위의 기존 mono 효과음 목록과 구분함.
+
+### 2026-11-28 크리스마스 세부 표현 수정
+
+- 플레이어는 기존 Kenney Mini Characters의 character-female-b.glb(CC0)를 사용함. 실행 중 플레이어 전용 텍스처 사본의 의상 색을 빨강으로 변경함. 원본 모델·텍스처와 주민 외형은 수정하지 않음.
+- 산타 모자와 흰 코트 장식은 santaAppearance.js에서 직접 구성한 메시·흰 테두리·방울·밑단·앞섶·단추이며 추가 외부 에셋을 사용하지 않음.
+- 기존 Kevin MacLeod 음악 4곡의 출처·CC BY 4.0 표기를 유지함. 재생 시 앞뒤 무음 구간을 제외하고 곡 사이 0.035초를 겹쳐 연결함. 원본 MP3 파일은 변경하지 않음.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>P3 Starter (three.js)</title>
+<title>꼬마산타의 크리스마스</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #b8d6f7; font-family: system-ui, sans-serif; }
   canvas { display: block; }
@@ -48,6 +48,7 @@
   #ending small { display: block; margin-top: 16px; color: #fff; }
   #ending small a { color: #fff; }
 </style>
+<link rel="stylesheet" href="./ui.css?v=details-20261128-4">
 <script type="importmap">
 {
   "imports": {
@@ -58,37 +59,79 @@
 </script>
 </head>
 <body>
-<div id="delivery-notice" hidden>배달 완료!</div>
+<div id="load-error" role="alert" hidden></div>
+<div id="audio-status" role="status" hidden></div>
+<div id="danger-warning" role="status" aria-live="assertive" hidden>
+  <svg class="danger-sign" viewBox="0 0 100 90" aria-hidden="true"><path d="M50 5 95 83H5Z" fill="#ffd35c" stroke="#30291f" stroke-width="6" stroke-linejoin="round"/><path d="M50 29v25" stroke="#30291f" stroke-width="9" stroke-linecap="round"/><circle cx="50" cy="68" r="5" fill="#30291f"/></svg>
+  <strong id="danger-text"></strong>
+</div>
+<button id="sound-toggle" class="game-button gold-button" type="button" aria-pressed="false">소리 끄기</button>
+<div id="start-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
+  <section id="start-panel" class="wood-panel">
+    <div id="intro-panel">
+      <h1 id="start-title">꼬마산타의<br><strong>크리스마스</strong></h1>
+      <p class="intro">트리 아래 선물을 챙겨<br>별이 빛나는 다섯 집에 전해 주세요.</p>
+      <p class="start-tip">미끄러운 길에서도 선물을 지킬 수 있을까요?</p>
+    </div>
+    <div id="instructions" hidden><span id="instruction-progress">1 / 3</span><h2 id="instruction-title"></h2><p id="instruction-copy"></p></div>
+    <div class="start-actions"><button id="show-instructions" class="game-button" type="button" disabled>게임 안내</button>
+    <button id="start-game" class="game-button red-button" type="button" disabled>불러오는 중…</button></div>
+    <div id="instruction-actions" hidden><button id="instruction-back" class="text-button" type="button">이전</button><button id="instruction-next" class="game-button" type="button">다음</button><button id="skip-instructions" class="text-button" type="button">건너뛰기</button></div>
+    <div class="music-credits"></div>
+  </section>
+</div>
+<div id="game-hud" class="wood-panel" hidden>
+  <strong>전달 <span id="delivery-count">0 / 5</span></strong>
+  <span>경과 시간 <b id="elapsed-time">0분 0초</b></span>
+  <section id="guide" hidden aria-label="선물 전달 안내" aria-live="polite"><strong id="guide-title">트리 아래 선물을 주우세요</strong><p id="guide-text">가까이에서 Space 또는 클릭</p></section>
+</div>
+<div id="delivery-notice" class="wood-panel" role="status" aria-live="polite" hidden>선물 전달 완료!</div>
 <button id="preview-ending" type="button" hidden>엔딩 미리보기 (폭죽·소리)</button>
 <div id="ending" hidden role="dialog" aria-modal="true" aria-labelledby="ending-title">
   <div id="celebration" aria-hidden="true"></div>
-  <div id="ending-panel">
-    <h1 id="ending-title">★ 선물 배달 완료! ★</h1>
-    <div>선물 5개를 모두 배달했어요.</div>
-    <div>걸린 시간 <b id="final-time">-</b></div>
-    <button id="play-again" type="button">다시 시작</button>
-    <small>음악: <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100187" target="_blank" rel="noopener">Jingle Bells — Kevin MacLeod</a> · CC BY 4.0</small>
+  <div id="ending-panel" class="wood-panel">
+    <h1 id="ending-title">선물 전달 성공!</h1>
+    <p>선물 5개를 모두 전했어요.</p>
+    <div id="result-count">전달 <strong id="final-deliveries">5 / 5</strong></div>
+    <div class="result-time">걸린 시간 <b id="final-time">-</b></div>
+    <button id="play-again" class="game-button" type="button">다시 선물하러 가기</button>
+    <div class="music-credits"></div>
   </div>
 </div>
 <div id="hud">
-  트리 아래 선물 가까이에서 Space 또는 선물 클릭으로 줍기, 배달할 집 앞에서 Space 또는 집 클릭으로 배달<br>
+  트리 아래 선물 가까이에서 Space 또는 선물 클릭으로 줍기, 별이 뜬 집 앞에서 Space 또는 집 클릭으로 선물 전달<br>
   WASD/방향키 이동, Shift 달리기, F 공 던지기, E 손 흔들기<br>
   Click: select or walk there (also on the minimap), drag: turn camera, wheel: zoom<br>
   B colliders, M mute, F12 screenshot<br>
-  dog: <b id="dogstate">-</b> &nbsp; selected: <b id="selected">-</b> &nbsp; <span id="fps"></span><br>
+  selected: <b id="selected">-</b> &nbsp; <span id="fps"></span><br>
   <span style="color:#9fe0ff">spike:</span> <span id="ice-shortcut" hidden>확인 모드: P키로 엔딩·폭죽·음악 바로 보기, 0-5 선물, T 빙판 이동 · </span>I ice shader: <b id="icemode">full</b><br>
   player: <b id="balance">-</b>
 </div>
+<template id="music-credit-template">
+  <details class="credits">
+    <summary>음악과 에셋 출처</summary>
+    <p><a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100075" target="_blank" rel="noopener">Silent Night</a>,
+      <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100369" target="_blank" rel="noopener">We Wish you a Merry Christmas</a>,
+      <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100368" target="_blank" rel="noopener">Deck the Halls B</a>,
+      <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100187" target="_blank" rel="noopener">Jingle Bells</a><br>
+      Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">By Attribution 4.0</a></p>
+    <p><a href="https://freesound.org/people/Qvantor/sounds/879802/" target="_blank" rel="noopener">Doorbell Ding Dong</a> ·
+      <a href="https://freesound.org/people/Qvantor/sounds/879797/" target="_blank" rel="noopener">Shine Chime</a> — Qvantor · CC0<br>
+      UI Pack · Pixel Adventure — Kenney · CC0</p>
+  </details>
+</template>
 <script>
   // show loading errors on screen (for example when the page was opened as file://)
   const showError = (msg) => {
-    const hud = document.getElementById('hud');
-    hud.innerHTML += `<br><b style="color:#ff8a80">Error:</b> ${msg}`;
+    const panel = document.getElementById('load-error');
+    panel.hidden = false;
+    panel.textContent = `게임을 불러오지 못했습니다. ${msg}`;
   };
   addEventListener('error', (e) => showError(e.message));
   addEventListener('unhandledrejection', (e) => showError(e.reason?.message ?? e.reason));
   if (location.protocol === 'file:') showError('run a local server (see README) instead of opening the file directly');
 </script>
-<script type="module" src="./main.js?snow-cover=2"></script>
+<script type="module" src="./main.js?v=details-20261128-4"></script>
 </body>
 </html>
