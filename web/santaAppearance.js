@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function dressSanta(model) {
+export function dressSanta(model, { beard = false } = {}) {
   // Clone only this player's atlas: villagers keep their original clothing.
   const body=model.getObjectByName('body-mesh');
   if(body?.material.map){
@@ -72,4 +72,17 @@ export function dressSanta(model) {
   pom.position.copy(curve.getPoint(1));hat.add(pom);
   hat.traverse(o=>{if(o.isMesh)o.castShadow=true;});
   head.add(hat);
+  if (beard) {
+    const beardMesh = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.72, 12, 8), white);
+    beardMesh.scale.set(1, 1.15, 0.45);
+    beardMesh.position.set(hat.position.x, hat.position.y - radius * 1.45, hat.position.z + radius * 0.65);
+    head.add(beardMesh);
+    for (const side of [-1, 1]) {
+      const moustache = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.32, 10, 7), white);
+      moustache.scale.set(1.2, 0.45, 0.5);
+      moustache.position.set(hat.position.x + side * radius * 0.29,
+        hat.position.y - radius * 1.1, hat.position.z + radius * 0.88);
+      head.add(moustache);
+    }
+  }
 }

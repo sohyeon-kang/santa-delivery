@@ -34,13 +34,13 @@ function walkingGraph(colliders) {
   return [...nodes.values()].filter(node => node.neighbors.length);
 }
 
-function routeFrom(start) {
+function routeFrom(start, blocked = new Set()) {
   // Search only the connected area, so a destination is always reachable.
   const previous = new Map([[start, null]]);
   const queue = [start];
   for (let i = 0; i < queue.length; i++) {
     for (const next of queue[i].neighbors) {
-      if (!previous.has(next)) {
+      if (!blocked.has(next) && !previous.has(next)) {
         previous.set(next, queue[i]);
         queue.push(next);
       }
@@ -104,9 +104,24 @@ export function createVillagers(props, colliders) {
         }
         if (agent.walk) agent.animator.play(agent.walk.name);
         const step = Math.min(distance, agent.speed * dt);
+        const nextX = obj.position.x + dx / distance * step;
+        const nextZ = obj.position.z + dz / distance * step;
+        const obstacle = agents.find(other => other !== agent && other.node &&
+          Math.hypot(nextX - other.prop.obj.position.x, nextZ - other.prop.obj.position.z) < 0.9);
+        if (obstacle) {
+          agent.blocked = (agent.blocked ?? 0) + dt;
+          if (agent.blocked > 0.35) {
+            agent.route = routeFrom(agent.node, new Set([next, obstacle.node]));
+            agent.blocked = 0;
+          }
+          agent.wait = 0.08;
+          if (agent.idle) agent.animator.play(agent.idle.name);
+          continue;
+        }
+        agent.blocked = 0;
         displacement.copy(obj.position);
-        obj.position.x += dx / distance * step;
-        obj.position.z += dz / distance * step;
+        obj.position.x = nextX;
+        obj.position.z = nextZ;
         pushOut(obj.position, 0.45, colliders);
         displacement.sub(obj.position).negate();
         agent.prop.box.translate(displacement);

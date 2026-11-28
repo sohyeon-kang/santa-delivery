@@ -56,12 +56,12 @@ export function winterVillage(data) {
     if (desc.model.startsWith('city-kit-roads/road-')) {
       const crossing = !name.startsWith('road-straight');
       return { ...desc, model: `tower-defense-kit/snow-tile-${crossing ? 'crossing' : 'wide-straight'}.glb`,
-        scale: 1, size: [8.02, 0.09, 8.02], pos: [desc.pos[0], -0.025, desc.pos[2]], rotY:(desc.rotY??0)+90 };
+        scale: 1, size: [7.98, 0.09, 7.98], pos: [desc.pos[0], -0.025, desc.pos[2]], rotY:(desc.rotY??0)+90 };
     }
     if (desc.model === 'city-kit-roads/tile-low.glb') {
       if (desc.scale === 2) return null;
       return { ...desc, model:'tower-defense-kit/snow-tile-wide-straight.glb', scale:1,
-        size:[4.02,0.09,4.02], pos:[desc.pos[0],-0.025,desc.pos[2]], rotY:desc.pos[0]===0?0:90 };
+        size:[3.98,0.09,3.98], pos:[desc.pos[0],-0.025,desc.pos[2]], rotY:desc.pos[0]===0?0:90 };
     }
     if (name.startsWith('driveway-')) return null;
     if (desc.model.startsWith('city-kit-commercial/building-')) {
@@ -72,7 +72,7 @@ export function winterVillage(data) {
       const fantasy = (index % 4 === 0 || index % 4 === 3) && index % 3 === 0;
       const pos=[...desc.pos];
       pos[0]+=Math.sin(index*2.17+0.4)*1.5;
-      pos[2]+=Math.cos(index*1.71+0.8)*1.6;
+      pos[2]+=Math.cos(index*1.71+0.8)*1.6 + (index % 2 ? 7 : -7) * Math.sign(pos[2]);
       return { ...desc, pos,rotY:(desc.rotY??0)+Math.sin(index*1.83+0.3)*14,
         winterHouse: fantasy ? 'fantasy' : 'cabin', scale: 1 };
     }
@@ -381,7 +381,7 @@ export async function decorateVillage(scene, props, place) {
     const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22,8,6),lampMaterial);
     glow.position.set(x,box.max.y-0.2,z);
     scene.add(glow);
-    const light = new THREE.PointLight('#ffd29a',5,8,2);
+    const light = new THREE.PointLight('#ffd29a',11,13,2);
     light.position.copy(glow.position);
     scene.add(light);
   }

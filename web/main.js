@@ -13,11 +13,11 @@ import { ICE_PATCHES, onIce } from './ice.js?v=park-ice-20261128-4';
 import { buildIce } from './iceMaterial.js?v=park-ice-20261128-4';
 import { snowMaterial, snowProfile } from './snowMaterial.js';
 import { Ball, makeCollider, mouseRay, rayAABB, rayGround } from './physics.js';
-import { Minimap, RANGE, SIZE, deliveryStarTexture } from './minimap.js?v=details-20261128-4';
+import { Minimap, RANGE, FULL_RANGE, SIZE, deliveryStarTexture } from './minimap.js?v=playtest-1';
 import { Sound } from './sound.js';
 import { Music } from './music.js?v=details-20261128-4';
 import { DeliveryEffects } from './deliveryEffects.js';
-import { dressSanta } from './santaAppearance.js?v=details-20261128-4';
+import { dressSanta } from './santaAppearance.js?v=playtest-20261128-2';
 
 const MODELS = '../assets/models/';
 const params = new URLSearchParams(location.search);   // test options: cam, demo, t
@@ -51,24 +51,24 @@ addEventListener('resize', () => {
 });
 
 const data = await (await fetch('../' + (params.get('scene') ?? 'scene.json'))).json();   // ?scene=other.json
-const sky = new THREE.Color('#7d88a4');
+const sky = new THREE.Color('#697b99');
 const skyTexture = await new THREE.TextureLoader().loadAsync('../assets/skyboxes/skybox-morning.png');
 skyTexture.colorSpace = THREE.SRGBColorSpace;
 skyTexture.mapping = THREE.EquirectangularReflectionMapping;
 scene.background = skyTexture;
-scene.backgroundIntensity = 0.3;
+scene.backgroundIntensity = 0.28;
 scene.fog = new THREE.FogExp2(sky, 0.006);
 
 // image-based ambient light from an HDRI (Poly Haven, CC0)
 const hdr = await new RGBELoader().loadAsync('../assets/hdri/kloofendal_48d_partly_cloudy_puresky_1k.hdr');
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromEquirectangular(hdr).texture;
-scene.environmentIntensity = 0.35;
+scene.environmentIntensity = 0.38;
 // keep the equirectangular HDR: the ice shader reads it as its environment map
 
 // sun with a shadow camera that follows the player
 const sunDir = new THREE.Vector3(...data.sun.direction).normalize();
-const sun = new THREE.DirectionalLight('#ffceaa', 0.75);
+const sun = new THREE.DirectionalLight('#e8e6dc', 0.85);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 140 });
@@ -146,8 +146,46 @@ setGiftModels(await Promise.all(giftFiles.map(async name =>
 const props = await Promise.all(winterVillage(data)
   .filter(({ model }) => !/^nature-kit\/(grass_|flower_)/.test(model))
   .map((desc) => place(desc, true)));
+const santaVillager = props.find(({obj}) => obj.name === 'character-male-a');
+if (santaVillager) dressSanta(santaVillager.obj, {beard:true});
 // world-space AABBs (rest pose): picking, and ground-plane colliders (see physics.js)
 for (const p of props) { p.obj.updateMatrixWorld(true); p.box = new THREE.Box3().setFromObject(p.obj); }
+const homeFootprints = props.filter(({obj}) => obj.userData.deliveryHome).map(({box}) => box);
+function iceBounds(patch) {
+  const points = patch.shape === 'bezier' ? patch.points : [patch.c];
+  const radiusX = patch.shape === 'bezier' ? patch.halfWidth : patch.h[0];
+  const radiusZ = patch.shape === 'bezier' ? patch.halfWidth : patch.h[1];
+  return {
+    loX:Math.min(...points.map(p => p[0])) - radiusX,
+    hiX:Math.max(...points.map(p => p[0])) + radiusX,
+    loZ:Math.min(...points.map(p => p[1])) - radiusZ,
+    hiZ:Math.max(...points.map(p => p[1])) + radiusZ,
+  };
+}
+function overlapsHome(bounds, dx = 0, dz = 0) {
+  return homeFootprints.some(box => bounds.loX + dx < box.max.x + 0.35 &&
+    bounds.hiX + dx > box.min.x - 0.35 && bounds.loZ + dz < box.max.z + 0.35 &&
+    bounds.hiZ + dz > box.min.z - 0.35);
+}
+for (const patch of ICE_PATCHES) {
+  const bounds = iceBounds(patch);
+  if (!overlapsHome(bounds)) continue;
+  let offset = null;
+  for (let distance = 1; distance <= 20 && !offset; distance++) {
+    for (const [ux,uz] of [[0,1],[0,-1],[1,0],[-1,0],[1,1],[-1,1],[1,-1],[-1,-1]]) {
+      const dx = ux * distance, dz = uz * distance;
+      if (Math.max(Math.abs(bounds.loX+dx),Math.abs(bounds.hiX+dx),Math.abs(bounds.loZ+dz),Math.abs(bounds.hiZ+dz)) > 78) continue;
+      if (!overlapsHome(bounds,dx,dz)) { offset = [dx,dz]; break; }
+    }
+  }
+  if (!offset) continue;
+  const [dx,dz] = offset;
+  patch.c = [patch.c[0]+dx,patch.c[1]+dz];
+  if (patch.shape === 'bezier') {
+    patch.points = patch.points.map(([x,z]) => [x+dx,z+dz]);
+    patch.curves = patch.curves.map(curve => curve.map(([x,z]) => [x+dx,z+dz]));
+  }
+}
 clearHouseEdges(props);
 const colliders = props.filter(p => !p.obj.userData.ambient).map((p) => makeCollider(p.obj.name, p.box, p.obj.position)).filter(Boolean);
 const village = await decorateVillage(scene, props, place);
@@ -166,6 +204,46 @@ rig.add(tilt);
 scene.add(rig);
 dressSanta(p.obj);
 const player = new SantaPlayer(rig, tilt, new Animator(p.obj, withCarryClips(p.clips)), colliders, scene);
+
+// Render the actual kit models once for crisp dialogue portraits.
+async function makeGuidePortraits() {
+  const portraitRenderer = new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});
+  portraitRenderer.setSize(256,256);
+  portraitRenderer.setPixelRatio(1);
+  portraitRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  const portraitScene = new THREE.Scene();
+  portraitScene.add(new THREE.HemisphereLight('#ffffff','#bdd3e1',2.2));
+  const key = new THREE.DirectionalLight('#ffffff',2.2);
+  key.position.set(3,5,7); portraitScene.add(key);
+  const portraitCamera = new THREE.OrthographicCamera(-1,1,1,-1,0.1,100);
+  const sources = [
+    [santaVillager?.obj ?? p.obj,['.santa-portrait']],
+    [(await loadGLB('holiday-kit/snowman-hat.glb')).scene,['#instruction-character[data-guide="snowman.png"]']],
+    [(await loadGLB('cube-pets/animal-deer.glb')).scene,['#instruction-character[data-guide="deer.png"]']],
+    [(await loadGLB('holiday-kit/gingerbread-man.glb')).scene,['#instruction-character[data-guide="gingerbread.png"]']],
+  ];
+  const portraits = new Map();
+  for (const [source, selectors] of sources) {
+    const model = SkeletonUtils.clone(source);
+    portraitScene.add(model);
+    model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    const extent = Math.max(size.x,size.y,size.z) * 0.72;
+    Object.assign(portraitCamera,{left:-extent,right:extent,top:extent,bottom:-extent});
+    portraitCamera.position.copy(center).add(new THREE.Vector3(extent*0.65,extent*0.28,extent*2.5));
+    portraitCamera.lookAt(center); portraitCamera.updateProjectionMatrix();
+    portraitRenderer.render(portraitScene,portraitCamera);
+    portraits.set(selectors[0],portraitRenderer.domElement.toDataURL('image/png'));
+    portraitScene.remove(model);
+  }
+  portraitRenderer.dispose();
+  portraitRenderer.forceContextLoss();
+  for (const img of document.querySelectorAll('.santa-portrait')) img.src = portraits.get('.santa-portrait');
+  return portraits;
+}
+const guidePortraits = makeGuidePortraits().catch(error => { console.warn('portrait fallback:',error); return new Map(); });
 
 const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(Ball.RADIUS, 24, 16),
   new THREE.MeshStandardMaterial({ color: '#e0261a', roughness: 0.5 }));
@@ -274,9 +352,23 @@ function select(obj) {
 }
 
 const minimap = new Minimap(scene);
+const mapToggle = document.getElementById('map-toggle');
+mapToggle?.addEventListener('click', () => {
+  minimap.full = !minimap.full;
+  mapToggle.textContent = minimap.full ? '확대 보기' : '전체 보기';
+  mapToggle.setAttribute('aria-pressed', String(minimap.full));
+});
 
 // Choose five distinct suburban houses for this run.
 const houses = props.filter(({ obj }) => obj.name.startsWith('building-type-'));
+for (const home of houses) home.obj.traverse(part => {
+  if (!part.isMesh) return;
+  part.material = Array.isArray(part.material) ? part.material.map(m => m.clone()) : part.material.clone();
+  for (const material of (Array.isArray(part.material) ? part.material : [part.material])) {
+    material.transparent = true;
+    material.depthWrite = false;
+  }
+});
 for (let i = houses.length - 1; i > 0; i--) {
   const j = Math.floor(Math.random() * (i + 1));
   [houses[i], houses[j]] = [houses[j], houses[i]];
@@ -312,16 +404,17 @@ const targetMarkers = deliveryTargets.map(({ obj, box }, index) => {
   const star = new THREE.Sprite(new THREE.SpriteMaterial({
     map: worldTexture, depthTest: true, depthWrite: false, transparent: true, toneMapped:false, fog:false,
   }));
-  star.position.set(obj.position.x, box.max.y + 2.3, obj.position.z);
-  star.scale.set(2.5, 2.5, 1);
+  obj.updateMatrixWorld(true);
+  star.position.copy(obj.localToWorld(new THREE.Vector3(0,6.25,3.15)));
+  star.scale.set(1.8, 1.8, 1);
   star.name='delivery-world-star';
   scene.add(star);
-  const groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), glowGroundMaterial);
+  const groundGlow = new THREE.Mesh(new THREE.PlaneGeometry(37.5, 37.5), glowGroundMaterial);
   groundGlow.rotation.x = -Math.PI / 2;
   groundGlow.position.set(obj.position.x, 0.09, obj.position.z);
   scene.add(groundGlow);
-  const light = new THREE.PointLight('#ffd36a', 32, 20, 2);
-  light.position.set(obj.position.x, Math.min(box.max.y * 0.6, 5), obj.position.z + (obj.position.z < 0 ? 3 : -3));
+  const light = new THREE.PointLight('#ffd36a', 80, 34, 2);
+  light.position.copy(obj.localToWorld(new THREE.Vector3(0,3.3,3.1)));
   scene.add(light);
   return { star, texture, light, groundGlow };
 
@@ -334,6 +427,7 @@ const automated = params.has('t') || params.has('demo');
 let startedAt = automated ? performance.now() : null;
 let finishedTime = null;
 const elapsedSeconds = () => startedAt === null ? 0 : (performance.now()-startedAt)/1000;
+const TIME_LIMIT = 5 * 60;
 const formatTime = seconds => `${Math.floor(seconds / 60)}분 ${Math.floor(seconds % 60)}초`;
 const ending = document.getElementById('ending');
 const celebration = document.getElementById('celebration');
@@ -370,6 +464,7 @@ soundToggle.addEventListener('click',toggleSound);
 function beginGame() {
   if (startedAt !== null) return;
   startedAt = performance.now();
+  if (mapToggle) mapToggle.hidden = false;
   keys.clear();
   startOverlay.hidden = true;
   gameHud.hidden = guide.hidden = false;
@@ -382,17 +477,25 @@ function beginGame() {
 }
 startButton.addEventListener('click',beginGame);
 const instructionPages = [
-  ['선물부터 챙겨요!','트리 아래 선물 가까이에서 Space 또는 클릭으로 주워요.'],
-  ['미끄러워도 괜찮아요!','WASD로 이동하고 Shift로 달려요.\n휘청이면 Shift를 떼어 버텨요.'],
-  ['별빛을 따라 선물을 전해요!','별이 뜬 집 앞에서 Space 또는 집을 클릭하세요.\n다섯 집에 선물을 전하면 성공이에요.'],
+  ['<em class="gift-word">선물</em>부터 챙겨요!', '트리 아래 <strong class="red-word">선물</strong> 가까이에서 <kbd>Space</kbd> 또는 <strong class="green-word">클릭</strong>으로 주워요.'],
+  ['<em class="green-word">미끄러워도</em> 괜찮아요!', '<kbd>WASD</kbd>로 <strong>이동하고</strong> <kbd>Shift</kbd>로 <strong>달려요.</strong> <strong>휘청이면</strong> <kbd>Shift</kbd>를 떼어 버텨요.'],
+  ['<em class="gift-word">별빛</em>을 따라 선물을 전해요!', '별이 뜬 집 앞에서 <kbd>Space</kbd> 또는 집을 <strong class="green-word">클릭</strong>하세요.'],
 ];
 let instructionPage = 0;
 function showInstructionPage() {
-  document.getElementById('instruction-progress').textContent = `${instructionPage+1} / 3`;
-  document.getElementById('instruction-title').textContent = instructionPages[instructionPage][0];
-  document.getElementById('instruction-copy').textContent = instructionPages[instructionPage][1];
+  const guides = [['snowman.png','안내하는 눈사람'],['deer.png','안내하는 사슴'],['gingerbread.png','안내하는 진저브레드 쿠키']];
+  const character = document.getElementById('instruction-character');
+  const file = guides[instructionPage][0];
+  character.dataset.guide = file;
+  character.src = `../assets/ui/guide/${file}`;
+  guidePortraits.then(portraits => {
+    const portrait = portraits.get(`#instruction-character[data-guide="${file}"]`);
+    if (portrait && character.dataset.guide === file) character.src = portrait;
+  });
+  character.alt = guides[instructionPage][1];
+  document.getElementById('instruction-title').innerHTML = instructionPages[instructionPage][0];
+  document.getElementById('instruction-copy').innerHTML = instructionPages[instructionPage][1];
   document.getElementById('instruction-next').textContent = instructionPage === 2 ? '게임 시작' : '다음';
-  document.getElementById('instruction-next').classList.toggle('red-button',instructionPage === 2);
 }
 showInstructions.addEventListener('click',() => {
   document.getElementById('intro-panel').hidden = true;
@@ -414,7 +517,6 @@ document.getElementById('instruction-back').addEventListener('click',() => {
     document.getElementById('instruction-actions').hidden = true;
   }
 });
-document.getElementById('skip-instructions').addEventListener('click',beginGame);
 function resumeTitleMusic() {
   if (startedAt === null && music.audio.paused) music.preview();
 }
@@ -447,11 +549,15 @@ function celebrate() {
 function showEnding() {
   if (finishedTime !== null) return;
   finishedTime = elapsedSeconds();
+  if (deliveredHomes.size < 5) {
+    document.getElementById('ending-letter').innerHTML = '괜찮단다, 꼬마산타야. 미끄러운 길에서 선물을 전하느라 애썼구나.<br>아직 기다리는 집이 있지만, 네가 전해 준 선물은 아이들에게 큰 기쁨이 되었을 거야.<br>잠깐 쉬었다가 다시 도전해 보겠니?';
+    document.getElementById('final-deliveries').textContent = `${deliveredHomes.size} / 5`;
+  }
   document.getElementById('final-time').textContent = formatTime(finishedTime);
   ending.hidden = false;
   startOverlay.hidden = gameHud.hidden = guide.hidden = true;
   deliveryNotice.hidden = true;
-  celebrate();
+  if (deliveredHomes.size === 5) celebrate();
   music.setMuted(sound.muted);
   music.finish();
   document.getElementById('play-again').focus();
@@ -459,6 +565,8 @@ function showEnding() {
 document.getElementById('play-again').addEventListener('click', () => location.reload());
 let pendingDelivery = null;
 let deliveryNoticeTime = 0;
+let celebrationJumpTime = 0;
+let pendingVictory = false;
 const deliveryNotice = document.getElementById('delivery-notice');
 function distanceToHome({ box }) {
   const x = Math.max(box.min.x - player.pos.x, 0, player.pos.x - box.max.x);
@@ -497,16 +605,17 @@ function finishDelivery({ target, gift, finish }) {
   targetMarkers[index].star.visible = false;
   targetMarkers[index].light.visible = false;
   targetMarkers[index].groundGlow.visible = false;
-  minimap.setDeliveryTargets(deliveryTargets.flatMap(({ obj }, i) =>
-    deliveredHomes.has(deliveryTargets[i]) ? [] : [{ position: obj.position, texture: targetMarkers[i].texture }]));
+  minimap.deliveryMarkers[index].visible = false;
   deliveryNoticeTime = 3.0;
-  deliveryNotice.textContent = `선물 전달 완료! ${deliveredHomes.size} / 5`;
+  deliveryNotice.textContent = `선물을 전했어요! ${deliveredHomes.size} / 5`;
   deliveryNotice.hidden = false;
+  player.oneShot('jump');
+  celebrationJumpTime = player.anim.duration('jump');
   notify(`선물 전달 완료! ${deliveredHomes.size} / 5`,deliveredHomes.size < 5 ? '다음 별이 뜬 집으로 가세요' : '',8,4);
   deliveryEffects.burst(finish);
   sound.play('delivery_chime');
   if (deliveredHomes.size === 5) {
-    showEnding();
+    pendingVictory = true;
   }
 }
 function nearbyHome(includeDelivered = false) {
@@ -574,6 +683,22 @@ function updateCamera(dt) {
     .multiplyScalar(cam.dist).add(cam.target);
   camera.lookAt(cam.target);
   camera.updateMatrixWorld();
+  // Fade a house when its volume blocks the line between camera and player.
+  const sight = player.pos.clone().add(new THREE.Vector3(0,1.4,0));
+  for (const home of houses) {
+    const inside = home.box.containsPoint(camera.position) || home.box.containsPoint(sight);
+    const hit = new THREE.Ray(camera.position, sight.clone().sub(camera.position).normalize()).intersectBox(home.box,new THREE.Vector3());
+    const occludes = inside || (hit && hit.distanceTo(camera.position) < camera.position.distanceTo(sight));
+    if (home.obj.userData.occludes === !!occludes) continue;
+    home.obj.userData.occludes = !!occludes;
+    home.obj.traverse(part => {
+      if (!part.isMesh) return;
+      const materials = Array.isArray(part.material) ? part.material : [part.material];
+      for (const material of materials) {
+        material.opacity = occludes ? 0.22 : 1;
+      }
+    });
+  }
   // keep the shadow camera centred on the player
   sun.target.position.copy(player.pos);
   sun.position.copy(player.pos).addScaledVector(sunDir, -60);
@@ -687,8 +812,9 @@ function demoStep(t, dt) {
     }
     if (e.mapclick) {                                   // click the minimap where that ground point is drawn
       const r = minimap.rect(), [x, z] = e.mapclick;
-      click(r.left + (x - minimap.center.x + RANGE) / (2 * RANGE) * SIZE,
-        r.top + (z - minimap.center.z + RANGE) / (2 * RANGE) * SIZE);
+      const range = minimap.full ? FULL_RANGE : RANGE;
+      click(r.left + (x - minimap.center.x + range) / (2 * range) * SIZE,
+        r.top + (z - minimap.center.z + range) / (2 * range) * SIZE);
     }
     if (e.cam) {
       camGoal = [THREE.MathUtils.degToRad(e.cam[0]), e.cam[1], e.cam[2]];
@@ -724,26 +850,33 @@ function step(dt) {
   if (demo) demoStep(simT, dt);
   const sprint = keys.has('ShiftLeft') || keys.has('ShiftRight');
   const before = player.pos.clone();
-  player.update(dt, pendingDelivery ? new THREE.Vector3() : moveInput(), pendingDelivery ? false : sprint);
+  player.update(dt, pendingDelivery || celebrationJumpTime > -player.anim.duration('jump') && celebrationJumpTime !== 0
+    ? new THREE.Vector3() : moveInput(), pendingDelivery ? false : sprint);
+  if (celebrationJumpTime > -player.anim.duration('jump') && celebrationJumpTime !== 0) {
+    const beforeJump = celebrationJumpTime;
+    celebrationJumpTime -= dt;
+    if (beforeJump > 0 && celebrationJumpTime <= 0) player.oneShot('jump');
+  }
+  if (pendingVictory && celebrationJumpTime <= -player.anim.duration('jump')) showEnding();
   if (pendingDelivery) {
     const delivery = pendingDelivery;
     delivery.time += dt;
-    const progress = Math.min(1, Math.max(0, (delivery.time - 1) / 0.9));
+    const progress = Math.min(1, Math.max(0, (delivery.time - 0.25) / 0.45));
     const ease = progress * progress * (3 - 2 * progress);
     const towardDoor = delivery.finish.clone().sub(player.pos);
     player.obj.rotation.y = turnToward(player.obj.rotation.y, headingOf(towardDoor), Player.TURN, dt);
     const reach = Math.min(1, delivery.time / 0.25);
-    const release = Math.min(1, Math.max(0, (2.1 - delivery.time) / 0.2));
+    const release = Math.min(1, Math.max(0, (0.85 - delivery.time) / 0.15));
     const motion = reach * release;
     delivery.arm.rotation.x = delivery.armStartX - 0.55 * motion;
-    if (delivery.time < 1) {
+    if (delivery.time < 0.25) {
       const extend = Math.min(1, delivery.time / 0.25);
       delivery.gift.position.lerpVectors(delivery.start, delivery.handoff, extend);
     } else {
       delivery.gift.position.lerpVectors(delivery.handoff, delivery.finish, ease);
       delivery.gift.position.y += 0.12 * Math.sin(Math.PI * progress);
     }
-    if (delivery.time >= 2.1) {
+    if (delivery.time >= 0.85) {
       finishDelivery(delivery);
       pendingDelivery = null;
     }
@@ -752,6 +885,7 @@ function step(dt) {
     deliveryNoticeTime -= dt;
     if (deliveryNoticeTime <= 0) deliveryNotice.hidden = true;
   }
+  if (elapsedSeconds() >= TIME_LIMIT) showEnding();
   if (walkTarget) {                                     // blocked by a wall for a while: give up
     const moved = Math.hypot(player.pos.x - before.x, player.pos.z - before.z);
     stuck = moved < 0.3 * Player.WALK * dt ? stuck + dt : 0;
@@ -764,7 +898,7 @@ function step(dt) {
   if (walkTarget) marker.position.copy(walkTarget).setY(0.02);
   const targetGlow = 0.75 + 0.25 * Math.sin(simT * 3);
   glowGroundMaterial.uniforms.uGlow.value = targetGlow;
-  for (const { light } of targetMarkers) light.intensity = 32 * targetGlow;
+  for (const { light } of targetMarkers) light.intensity = 80 * targetGlow;
   updateCamera(dt);
   // third-person games put the ears on the character and turn them with the camera
   sound.setListener(up(player.pos, 1.4), camera.quaternion);
@@ -781,7 +915,7 @@ function setText(element, text) {
   if (element.textContent !== text) element.textContent = text;
 }
 function updateHud() {
-  const elapsed = formatTime(finishedTime ?? elapsedSeconds());
+  const elapsed = formatTime(Math.max(0,TIME_LIMIT - (finishedTime ?? elapsedSeconds())));
   setText(deliveryCount,`${deliveredHomes.size} / 5`);
   setText(elapsedTime,elapsed);
   if (startedAt !== null && finishedTime === null) {
@@ -817,6 +951,10 @@ function updateHud() {
     + ` · recovered ${player.balance.recovered} / fell ${player.balance.fell}`;
 }
 const hudFps = document.getElementById('fps');
+// Compile the delivery particles while the loading screen is still visible.
+deliveryEffects.points.visible = true;
+await renderer.compileAsync(scene,camera);
+deliveryEffects.points.visible = false;
 startButton.disabled = showInstructions.disabled = false;
 startButton.textContent = '게임 시작';
 const clock = new THREE.Clock();

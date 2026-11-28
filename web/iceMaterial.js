@@ -152,7 +152,7 @@ void main() {
   // sparkles: one cell in ~12 gets a tilted micro facet; it lights up only when it faces H
   vec2 cell = floor(p * 14.0);
   vec3 Ng = normalize(N + vec3(hash(cell + 3.1) - 0.5, 0.0, hash(cell + 7.7) - 0.5) * 0.9);
-  float glint = step(0.92, hash(cell)) * pow(max(dot(Ng, H), 0.0), 300.0) * 6.0;
+  float glint = step(0.97, hash(cell)) * pow(max(dot(Ng, H), 0.0), 300.0) * 1.8;
 
   float cosT = max(dot(N, V), 0.0);
   float F = uF0 + (1.0 - uF0) * pow(1.0 - cosT, 5.0);   // Schlick
@@ -168,7 +168,7 @@ void main() {
   // Keep the lighting and sky reflection: an opaque white override looks painted.
   color += uWhiteIce * (vec3(rim*0.055) - vec3(fracture*0.035));
 
-  float opacity = mix(mix(0.9,1.0,F),mix(0.50,0.88,F),uWhiteIce);
+  float opacity = mix(mix(0.60,0.82,F),mix(0.38,0.68,F),uWhiteIce);
   gl_FragColor = vec4(color, alpha * opacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
