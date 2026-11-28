@@ -8,7 +8,7 @@
   "bark":       { "files": ["bark_0.wav", "bark_1.wav"], "gain": 0.45 },
   "select":     { "files": ["select_0.wav"], "gain": 0.5, "ui": true },
   "move":       { "files": ["move_0.wav"], "gain": 0.35, "ui": true },
-  "step_ice":   { "files": ["library/kenney-impact-sounds/impactGlass_light_000.ogg", "library/kenney-impact-sounds/impactGlass_light_001.ogg", "library/kenney-impact-sounds/impactGlass_light_002.ogg", "library/kenney-impact-sounds/impactGlass_light_003.ogg", "library/kenney-impact-sounds/impactGlass_light_004.ogg"], "gain": 0.18 },
+  "step_ice":   { "files": ["step_hard_0.wav", "step_hard_1.wav", "step_hard_2.wav"], "gain": 0.22 },
   "wobble":     { "files": ["library/kenney-interface-sounds/question_001.ogg", "library/kenney-interface-sounds/question_002.ogg"], "gain": 0.5 },
   "recover":    { "files": ["library/kenney-interface-sounds/confirmation_001.ogg"], "gain": 0.45 },
   "fall":       { "files": ["library/kenney-impact-sounds/impactSoft_heavy_000.ogg", "library/kenney-impact-sounds/impactSoft_heavy_001.ogg", "library/kenney-impact-sounds/impactSoft_heavy_002.ogg", "library/kenney-impact-sounds/impactSoft_heavy_003.ogg", "library/kenney-impact-sounds/impactSoft_heavy_004.ogg"], "gain": 0.7 },

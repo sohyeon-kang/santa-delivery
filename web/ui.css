@@ -98,5 +98,55 @@ body.debug #hud { display: block; z-index: 4; top: 100px; max-width: calc(100vw 
   paint-order:stroke fill; -webkit-text-stroke:4px #30291f; text-shadow:0 2px 4px #30291f88; }
 .danger-sign { width:clamp(48px,5vw,72px); height:auto; filter:drop-shadow(0 2px 3px #30291f55); }
 #danger-warning[hidden] { display:none; }
-#delivery-notice { display:none; }
+#delivery-notice { display:block; }
+#delivery-notice[hidden] { display:none; }
 @media(max-width:700px) { #game-hud { width:calc(100vw - 32px); } }
+#map-toggle { position:fixed; right:16px; top:244px; z-index:5; min-height:38px; padding:7px 18px 10px; font-size:13px; }
+@font-face { font-family:'ChristmasUI'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2307-2@1.0/HakgyoansimGgooreogiR.woff2') format('woff2'); font-display:swap; }
+body,button,.game-button { font-family:'ChristmasUI',system-ui,sans-serif; }
+#start-overlay { align-items:safe center; }
+#start-panel { --dialogue-ink:#493829; }
+#start-panel:has(#intro-panel:not([hidden])),
+#start-panel:has(#instructions:not([hidden])) { width:min(950px,calc(100vw - 36px)); padding:0; border:0; border-image:none; background:transparent; box-shadow:none; filter:none; }
+#start-panel .music-credits { display:none; }
+#start-panel .santa-letter,
+#start-panel #instructions { display:grid; grid-template-columns:144px minmax(0,1fr); align-items:center; gap:18px; width:100%; }
+#start-panel .santa-avatar,
+#start-panel #instruction-character { width:144px; height:144px; justify-self:center; object-fit:contain; image-rendering:auto; }
+#start-panel .santa-portrait { width:100%; height:100%; object-fit:contain; }
+#start-panel .santa-bubble,
+#start-panel .instruction-bubble { box-sizing:border-box; position:relative; width:100%; min-width:0; min-height:360px; padding:28px 32px; border:3px solid #b9d4e3; border-radius:22px; background:#fff; box-shadow:0 8px 22px #132d3580; color:var(--dialogue-ink); display:flex; flex-direction:column; align-items:center; text-align:center; }
+#start-panel .santa-bubble::before,
+#start-panel .instruction-bubble::before { content:''; position:absolute; left:-13px; top:50%; width:18px; height:18px; border-left:3px solid #b9d4e3; border-bottom:3px solid #b9d4e3; background:#fff; transform:rotate(45deg); }
+#start-panel .dialogue-copy { box-sizing:border-box; width:100%; flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+#start-panel .santa-letter #start-title,
+#start-panel #instruction-title { width:100%; margin:0 0 24px; color:var(--dialogue-ink); font-size:30px; line-height:1.25; text-align:center; }
+#start-panel .santa-letter .intro,
+#start-panel #instruction-copy { width:100%; margin:0; color:var(--dialogue-ink); font-size:21px; line-height:1.5; text-align:center; white-space:normal; }
+#start-panel #instruction-copy { text-wrap:balance; }
+#start-panel .letter-line { display:block; text-wrap:balance; word-break:keep-all; }
+#start-panel .letter-line + .letter-line { margin-top:10px; }
+#start-panel .santa-letter .intro strong,
+#start-panel #instruction-copy strong,
+#start-panel #instruction-copy kbd { color:inherit; font-size:1.2em; font-weight:700; }
+#start-panel #instruction-title em { color:inherit; font-size:1em; font-style:normal; }
+#start-panel #instruction-copy kbd { display:inline; padding:0; margin:0; border:0; border-radius:0; background:none; box-shadow:none; font-family:inherit; }
+#start-panel .start-actions,
+#start-panel #instruction-actions { box-sizing:border-box; width:100%; display:flex; justify-content:center; align-items:center; gap:12px; margin:0; padding:16px 0 0; }
+#start-panel .start-actions > .game-button,
+#start-panel #instruction-actions > .game-button { flex:0 0 172px; width:172px!important; min-height:52px; font-size:19px; }
+@media(max-width:850px) {
+  #start-panel .santa-letter,
+  #start-panel #instructions { grid-template-columns:86px minmax(0,1fr); gap:10px; }
+  #start-panel .santa-avatar,
+  #start-panel #instruction-character { width:86px; height:86px; }
+  #start-panel .santa-bubble,
+  #start-panel .instruction-bubble { min-height:320px; padding:20px 18px; }
+  #start-panel .santa-letter #start-title,
+  #start-panel #instruction-title { font-size:26px; margin-bottom:18px; }
+  #start-panel .santa-letter .intro,
+  #start-panel #instruction-copy { font-size:18px; }
+  #start-panel .letter-line { overflow-wrap:anywhere; }
+  #start-panel .start-actions > .game-button,
+  #start-panel #instruction-actions > .game-button { flex:1 1 0; width:auto!important; min-width:0; }
+}

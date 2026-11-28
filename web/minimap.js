@@ -9,11 +9,12 @@ import * as THREE from 'three';
 import { ICE_PATCHES } from './ice.js?v=park-ice-20261128-4';
 import { parkPathGeometry } from './parkPathGeometry.js';
 
-export const SIZE = 320;     // CSS pixels
+export const SIZE = 220;     // CSS pixels
 export const MARGIN = 16;    // CSS pixels from the window corner
 export const RANGE = 34;     // show one quarter of the former map area around the player
+export const FULL_RANGE = 85;
 const ICON_LAYER = 1;
-const Y = 40;                // icons float above everything
+const Y = 100;               // icons stay above the ice and all scenery
 
 export function deliveryStarTexture(color, backdrop = true) {
   const canvas = document.createElement('canvas');
@@ -55,9 +56,13 @@ function icon(geometry, color, order) {
   return m;
 }
 
-function arrowShape(size) {         // triangle pointing along +Y in shape space
+function arrowShape(size) {         // Christmas tree pointing along +Y
   const s = new THREE.Shape();
-  s.moveTo(0, size); s.lineTo(-0.7 * size, -0.6 * size); s.lineTo(0.7 * size, -0.6 * size); s.closePath();
+  s.moveTo(0,size); s.lineTo(-0.45*size,0.25*size); s.lineTo(-0.25*size,0.25*size);
+  s.lineTo(-0.75*size,-0.55*size); s.lineTo(-0.16*size,-0.55*size);
+  s.lineTo(-0.16*size,-0.85*size); s.lineTo(0.16*size,-0.85*size);
+  s.lineTo(0.16*size,-0.55*size); s.lineTo(0.75*size,-0.55*size);
+  s.lineTo(0.25*size,0.25*size); s.lineTo(0.45*size,0.25*size); s.closePath();
   return new THREE.ShapeGeometry(s);
 }
 function iceShape(shape) {
@@ -73,13 +78,14 @@ function iceShape(shape) {
 export class Minimap {
   constructor(scene) {
     this.scene = scene;
-    this.camera = new THREE.OrthographicCamera(-RANGE, RANGE, RANGE, -RANGE, 1, 160);
+    this.camera = new THREE.OrthographicCamera(-RANGE, RANGE, RANGE, -RANGE, 1, 240);
     this.camera.up.set(0, 0, -1);
     this.camera.layers.enable(ICON_LAYER);
     this.center = new THREE.Vector3();
+    this.full = false;
     const s = RANGE * 0.07;          // icon size in metres (about 8 px)
     this.icons = {
-      playerBack: icon(arrowShape(s * 1.35), 0x1a1a1a, 20), player: icon(arrowShape(s), 0xffd91a, 21),
+      playerBack: icon(arrowShape(s * 1.35), 0x1a1a1a, 30), player: icon(arrowShape(s), 0x19b66b, 31),
       ballBack: icon(new THREE.CircleGeometry(s * 0.55, 12), 0x1a1a1a, 20), ball: icon(new THREE.CircleGeometry(s * 0.4, 12), 0xe61a10, 21),
       target: icon(new THREE.RingGeometry(s * 0.45, s * 0.6, 20), 0x33ff66, 19),
     };
@@ -131,7 +137,8 @@ export class Minimap {
   toWorld(mx, my) {          // window pixel inside the map -> point on the ground
     const r = this.rect();
     const u = (mx - r.left) / SIZE, v = (my - r.top) / SIZE;
-    return new THREE.Vector3(this.center.x - RANGE + 2 * RANGE * u, 0, this.center.z - RANGE + 2 * RANGE * v);
+    const range = this.full ? FULL_RANGE : RANGE;
+    return new THREE.Vector3(this.center.x - range + 2 * range * u, 0, this.center.z - range + 2 * range * v);
   }
 
   place(m, p, heading = null) {
@@ -140,8 +147,11 @@ export class Minimap {
   }
 
   update({ player, ball, walkTarget, mainCamera, camYaw }) {
-    this.center.set(player.pos.x, 0, player.pos.z);
-    this.camera.position.set(this.center.x, 80, this.center.z);
+    this.center.set(this.full ? 0 : player.pos.x, 0, this.full ? 0 : player.pos.z);
+    const range = this.full ? FULL_RANGE : RANGE;
+    Object.assign(this.camera,{left:-range,right:range,top:range,bottom:-range});
+    this.camera.updateProjectionMatrix();
+    this.camera.position.set(this.center.x, 150, this.center.z);
     this.camera.lookAt(this.center);
     const I = this.icons;
     this.place(I.playerBack, player.pos, player.obj.rotation.y);
